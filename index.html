@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Gestion Leads"/>
+  <meta name="theme-color" content="#0F1117"/>
+  <title>Gestion Leads</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0F1117;font-family:'Segoe UI',sans-serif}
+    input,select,textarea,button{font-family:inherit}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+// ── Clé API ──────────────────────────────────────────────────────────────────
+function getKey(){return localStorage.getItem(“gl_gemini_key”)||””}
+function saveKey(k){localStorage.setItem(“gl_gemini_key”,k)}
+
+// ── Couleurs ─────────────────────────────────────────────────────────────────
+const C={
+bg:”#0F1117”,surface:”#181C27”,high:”#1E2333”,border:”#2A2F42”,
+accent:”#3B82F6”,accentL:”#60A5FA”,accentD:”#1D3557”,
+green:”#10B981”,greenD:”#064E3B”,
+orange:”#F59E0B”,orangeD:”#451A03”,
+red:”#EF4444”,redD:”#450A0A”,
+purple:”#8B5CF6”,purpleD:”#2E1065”,
+text:”#F1F5F9”,muted:”#94A3B8”,dim:”#475569”,
+};
+
+const STATUTS={
+“Nouveau”:{color:C.accent,bg:C.accentD,icon:“✦”},
+“Message envoyé”:{color:C.green,bg:C.greenD,icon:“✉”},
+“En échange”:{color:”#06B6D4”,bg:”#0C4A6E”,icon:“↔”},
+“RDV proposé”:{color:C.orange,bg:C.orangeD,icon:“◈”},
+“Visite prévue”:{color:C.purple,bg:C.purpleD,icon:“⌂”},
+“Sans réponse”:{color:”#6B7280”,bg:”#1F2937”,icon:“◌”},
+“Perdu”:{color:C.red,bg:C.redD,icon:“✕”},
+};
+
+const PRIOS={
+“Haute”:{color:C.red,label:“↑ Haute”},
+“Normale”:{color:C.accent,label:“→ Normale”},
+“Basse”:{color:C.muted,label:“↓ Basse”},
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function genId(){return”L”+Date.now().toString(36).toUpperCase()}
+function today(){return new Date().toISOString().split(“T”)[0]}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().split(“T”)[0]}
+function fmtDate(d){if(!d)return”—”;return new Date(d+“T12:00:00”).toLocaleDateString(“fr-FR”,{day:“2-digit”,month:“short”,year:“numeric”})}
+function isToday(d){return d===today()}
+function isPast(d){return d&&d<today()}
+function loadLeads(){try{return JSON.parse(localStorage.getItem(“gl_v1”)||”[]”)}catch{return[]}}
+function saveLeads(l){localStorage.setItem(“gl_v1”,JSON.stringify(l))}
+
+// ── Gemini API ────────────────────────────────────────────────────────────────
+async function geminiVision(imageB64, mimeType, key){
+const prompt=`Tu es expert en lecture de captures d’écran immobilières (emails LeBonCoin, SeLoger, PAP, etc.).
+Lis TOUT le texte visible, même petit, et extrais les infos de l’acheteur.
+Réponds UNIQUEMENT avec ce JSON (rien d’autre, pas de markdown) :
+{“prenom”:””,“nom”:””,“telephone”:””,“email”:””,“ville”:””,“bien”:””,“plateforme”:””,“messageBrut”:””}
+Règles :
+
+- prenom/nom : cherche dans “De:”, “From:”, “Nom:” ou corps. Si incertain → tout dans nom.
+- telephone : tout numéro visible (+33, 06, 07…)
+- email : toute adresse email visible
+- ville : ville/secteur mentionné dans le message ou l’objet
+- bien : description du bien (souvent dans l’objet de l’email)
+- plateforme : leboncoin.fr→LeBonCoin, seloger.com→SeLoger, pap.fr→PAP, bienici.com→Bien’ici, logic-immo.com→Logic-Immo, WhatsApp→WhatsApp, email direct→Email, sinon→Autre
+- messageBrut : texte principal du message. Champ absent = laisser vide.`; const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+  method:“POST”,headers:{“Content-Type”:“application/json”},
+  body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:mimeType,data:imageB64}},{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:800}})
+  });
+  const data=await res.json();
+  if(data.error)throw new Error(data.error.message);
+  const txt=data.candidates?.[0]?.content?.parts?.[0]?.text||””;
+  const m=txt.match(/{[\s\S]*}/);
+  if(!m)throw new Error(“Pas de JSON”);
+  return JSON.parse(m[0]);
+  }
+
+async function geminiText(prompt, key){
+const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+method:“POST”,headers:{“Content-Type”:“application/json”},
+body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:400}})
+});
+const data=await res.json();
+if(data.error)throw new Error(data.error.message);
+return data.candidates?.[0]?.content?.parts?.[0]?.text||””;
+}
+
+// ── Composants de base ────────────────────────────────────────────────────────
+const Sb=(s,sm)=>{const cfg=STATUTS[s]||STATUTS[“Nouveau”];return(
+<span style={{display:“inline-flex”,alignItems:“center”,gap:4,padding:sm?“2px 8px”:“4px 10px”,borderRadius:20,fontSize:sm?11:12,fontWeight:600,color:cfg.color,background:cfg.bg,border:`1px solid ${cfg.color}33`}}>
+<span style={{fontSize:sm?8:9}}>{cfg.icon}</span>{s}
+</span>
+)};
+
+function Inp({label,value,onChange,ph,type=“text”}){
+return <div style={{marginBottom:12}}>
+{label&&<div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:“uppercase”,letterSpacing:“0.08em”,marginBottom:5}}>{label}</div>}
+<input type={type} value={value||””} onChange={e=>onChange(e.target.value)} placeholder={ph}
+style={{width:“100%”,padding:“10px 12px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:14,outline:“none”,boxSizing:“border-box”}}/>
+
+  </div>
+}
+
+function Sel({label,value,onChange,opts}){
+return <div style={{marginBottom:12}}>
+{label&&<div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:“uppercase”,letterSpacing:“0.08em”,marginBottom:5}}>{label}</div>}
+<select value={value||””} onChange={e=>onChange(e.target.value)}
+style={{width:“100%”,padding:“10px 12px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:14,outline:“none”,boxSizing:“border-box”}}>
+{opts.map(o=><option key={o} value={o}>{o}</option>)}
+</select>
+
+  </div>
+}
+
+function Btn({children,onClick,v=“primary”,sm,full,style,disabled}){
+const vs={primary:{bg:C.accent,color:”#fff”,border:“none”},success:{bg:C.green,color:”#fff”,border:“none”},ghost:{bg:“transparent”,color:C.muted,border:`1px solid ${C.border}`},outline:{bg:“transparent”,color:C.accent,border:`1px solid ${C.accent}`},wa:{bg:”#25D366”,color:”#fff”,border:“none”}};
+return <button onClick={onClick} disabled={disabled}
+style={{padding:sm?“6px 14px”:“11px 20px”,borderRadius:8,fontSize:sm?12:14,fontWeight:700,cursor:disabled?“not-allowed”:“pointer”,opacity:disabled?0.5:1,width:full?“100%”:“auto”,letterSpacing:“0.02em”,…(vs[v]||vs.primary),…style}}>
+{children}
+</button>
+}
+
+function Modal({title,onClose,children,w=520}){
+return <div style={{position:“fixed”,inset:0,background:”#000b”,display:“flex”,alignItems:“center”,justifyContent:“center”,zIndex:1000,padding:16}}>
+<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,width:“100%”,maxWidth:w,maxHeight:“90vh”,overflowY:“auto”,padding:24,boxSizing:“border-box”}}>
+<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”,marginBottom:20}}>
+<div style={{fontSize:17,fontWeight:800,color:C.text}}>{title}</div>
+{onClose&&<button onClick={onClose} style={{background:“none”,border:“none”,color:C.muted,fontSize:20,cursor:“pointer”}}>✕</button>}
+</div>
+{children}
+</div>
+
+  </div>
+}
+
+// ── Écran configuration clé API ───────────────────────────────────────────────
+function SetupKey({onSaved}){
+const [k,setK]=useState(””);
+const [err,setErr]=useState(””);
+const [testing,setTesting]=useState(false);
+async function test(){
+if(!k.trim()){setErr(“Colle ta clé ici”);return}
+setTesting(true);setErr(””);
+try{
+await geminiText(“Réponds juste: ok”,k.trim());
+saveKey(k.trim());
+onSaved();
+}catch(e){
+setErr(“Clé invalide : “+e.message);
+}finally{setTesting(false)}
+}
+return <div style={{minHeight:“100vh”,background:C.bg,display:“flex”,alignItems:“center”,justifyContent:“center”,padding:24}}>
+<div style={{width:“100%”,maxWidth:420}}>
+<div style={{textAlign:“center”,marginBottom:32}}>
+<div style={{fontSize:40,marginBottom:12}}>🔑</div>
+<div style={{fontSize:22,fontWeight:900,color:C.text,marginBottom:8}}>Configuration</div>
+<div style={{fontSize:14,color:C.muted,lineHeight:1.6}}>
+Colle ta clé API Gemini pour activer l’analyse IA des photos.<br/>
+Elle sera sauvegardée sur cet appareil uniquement.
+</div>
+</div>
+<div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:20}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:“uppercase”,letterSpacing:“0.08em”,marginBottom:8}}>Clé API Gemini</div>
+<input value={k} onChange={e=>setK(e.target.value)} placeholder=“AIza…”
+style={{width:“100%”,padding:“12px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:14,outline:“none”,boxSizing:“border-box”,marginBottom:12}}/>
+{err&&<div style={{padding:“10px 12px”,background:C.redD,borderRadius:8,color:C.red,fontSize:13,marginBottom:12}}>{err}</div>}
+<Btn full onClick={test} disabled={testing}>{testing?“⏳ Vérification…”:“✓ Enregistrer et démarrer”}</Btn>
+<div style={{marginTop:16,fontSize:12,color:C.dim,textAlign:“center”}}>
+Obtiens ta clé gratuite sur <span style={{color:C.accentL}}>aistudio.google.com</span>
+</div>
+</div>
+</div>
+
+  </div>
+}
+
+// ── Nouveau Lead ──────────────────────────────────────────────────────────────
+function NouveauLead({onLeadCreated,apiKey}){
+const [img,setImg]=useState(null);
+const [step,setStep]=useState(“upload”);
+const [busy,setBusy]=useState(false);
+const [status,setStatus]=useState(””);
+const [err,setErr]=useState(””);
+const EMPTY={prenom:””,nom:””,telephone:””,email:””,ville:””,bien:””,plateforme:””,messageBrut:””,priorite:“Normale”,commentaire:””};
+const [form,setForm]=useState(EMPTY);
+const sf=k=>v=>setForm(f=>({…f,[k]:v}));
+
+function onFile(e){
+const file=e.target.files[0];
+if(!file)return;
+setStep(“upload”);setErr(””);setStatus(””);setForm(EMPTY);
+const el=new Image(),url=URL.createObjectURL(file);
+el.onload=()=>{
+const MAX=1400;let w=el.width,h=el.height;
+if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}
+const cv=document.createElement(“canvas”);cv.width=w;cv.height=h;
+cv.getContext(“2d”).drawImage(el,0,0,w,h);
+setImg(cv.toDataURL(“image/jpeg”,0.85));URL.revokeObjectURL(url);
+};
+el.src=url;
+}
+
+async function analyze(){
+if(!img)return;
+setBusy(true);setErr(””);setStatus(“Envoi à l’IA…”);
+try{
+const b64=img.split(”,”)[1],mime=img.split(”;”)[0].split(”:”)[1]||“image/jpeg”;
+const p=await geminiVision(b64,mime,apiKey);
+setForm(f=>({…f,prenom:p.prenom||””,nom:p.nom||””,telephone:p.telephone||””,email:p.email||””,ville:p.ville||””,bien:p.bien||””,plateforme:p.plateforme||””,messageBrut:p.messageBrut||””}));
+setStatus(””);setStep(“validate”);
+}catch(e){
+setErr(“Extraction échouée — remplis manuellement. (”+e.message+”)”);
+setStatus(””);setStep(“validate”);
+}finally{setBusy(false)}
+}
+
+function valider(){
+onLeadCreated({id:genId(),dateEntree:today(),…form,statut:“Nouveau”,lienPhoto:img,
+historique:[{date:new Date().toISOString(),action:“Lead créé”}],relances:[],messageEnvoye:false,contactCree:false});
+}
+
+return <div>
+<div style={{fontSize:22,fontWeight:900,color:C.text,marginBottom:4}}>Nouveau lead</div>
+<div style={{fontSize:13,color:C.muted,marginBottom:20}}>Photo → Analyse IA → Validation</div>
+<label style={{display:“block”,border:`2px dashed ${img?C.accent:C.border}`,borderRadius:12,padding:24,textAlign:“center”,cursor:“pointer”,background:img?C.accentD+“55”:C.high,marginBottom:14}}>
+{img
+?<><img src={img} alt=”” style={{maxHeight:180,maxWidth:“100%”,borderRadius:8,marginBottom:8,display:“block”,margin:“0 auto 8px”}}/><div style={{fontSize:12,color:C.accentL}}>📷 Appuyer pour changer</div></>
+:<><div style={{fontSize:38,marginBottom:8}}>📷</div><div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Ajouter une photo / capture</div><div style={{fontSize:12,color:C.muted}}>Appuyer pour sélectionner</div></>
+}
+<input type=“file” accept=“image/*” onChange={onFile} style={{display:“none”}}/>
+</label>
+{img&&step!==“validate”&&<>
+<Btn full onClick={analyze} disabled={busy} style={{marginBottom:8}}>{busy?`⏳ ${status||"Analyse…"}`:“🔍 Analyser l’image”}</Btn>
+{busy&&<div style={{height:3,background:C.border,borderRadius:3,marginBottom:12,overflow:“hidden”}}><div style={{height:“100%”,width:“65%”,background:C.accent,borderRadius:3}}/></div>}
+</>}
+{err&&<div style={{padding:“12px 14px”,background:C.redD,borderRadius:8,borderLeft:`3px solid ${C.red}`,marginBottom:14}}>
+<div style={{fontSize:13,color:C.red,fontWeight:700,marginBottom:4}}>⚠ Extraction échouée</div>
+<div style={{fontSize:12,color:”#FCA5A5”}}>{err}</div>
+</div>}
+{step===“validate”&&<div>
+<div style={{borderTop:`1px solid ${C.border}`,paddingTop:18,marginBottom:14}}>
+<div style={{fontSize:12,fontWeight:800,color:C.accentL,marginBottom:14,textTransform:“uppercase”,letterSpacing:“0.06em”}}>✓ Vérification des données</div>
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:“0 12px”}}>
+<Inp label=“Prénom” value={form.prenom} onChange={sf(“prenom”)} ph=“Prénom”/>
+<Inp label=“Nom” value={form.nom} onChange={sf(“nom”)} ph=“Nom”/>
+</div>
+<Inp label=“Téléphone” value={form.telephone} onChange={sf(“telephone”)} ph=”+33 6…”/>
+<Inp label=“Email” value={form.email} onChange={sf(“email”)} ph=“email@…” type=“email”/>
+<Inp label=“Ville / Secteur” value={form.ville} onChange={sf(“ville”)} ph=“Paris, Lyon…”/>
+<Inp label=“Bien recherché” value={form.bien} onChange={sf(“bien”)} ph=“Appartement T3…”/>
+<Sel label=“Plateforme” value={form.plateforme} onChange={sf(“plateforme”)} opts={[””,“SeLoger”,“LeBonCoin”,“PAP”,“Bien’ici”,“Logic-Immo”,“WhatsApp”,“Email”,“Autre”]}/>
+<Sel label=“Priorité” value={form.priorite} onChange={sf(“priorite”)} opts={[“Haute”,“Normale”,“Basse”]}/>
+<div style={{marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:“uppercase”,letterSpacing:“0.08em”,marginBottom:5}}>Message brut</div>
+<textarea value={form.messageBrut} onChange={e=>sf(“messageBrut”)(e.target.value)} rows={3} placeholder=“Message d’origine…”
+style={{width:“100%”,padding:“10px 12px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,resize:“vertical”,boxSizing:“border-box”}}/>
+</div>
+<div style={{marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:“uppercase”,letterSpacing:“0.08em”,marginBottom:5}}>Commentaire</div>
+<textarea value={form.commentaire} onChange={e=>sf(“commentaire”)(e.target.value)} rows={2} placeholder=“Notes libres…”
+style={{width:“100%”,padding:“10px 12px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,resize:“vertical”,boxSizing:“border-box”}}/>
+</div>
+</div>
+<Btn full v="success" onClick={valider}>✓ Valider et enregistrer</Btn>
+</div>}
+
+  </div>
+}
+
+// ── WhatsApp Modal ────────────────────────────────────────────────────────────
+function WAModal({lead,onConfirm,onClose,apiKey}){
+const [msg,setMsg]=useState(””);
+const [busy,setBusy]=useState(false);
+const [step,setStep]=useState(“gen”);
+useEffect(()=>{gen()},[]);
+async function gen(){
+setBusy(true);
+try{
+const prompt=`Génère un message WhatsApp professionnel et chaleureux pour répondre à un acheteur immobilier.\nPrénom: ${lead.prenom||""} | Ville: ${lead.ville||""} | Bien: ${lead.bien||""} | Plateforme: ${lead.plateforme||""}\nMessage original: ${lead.messageBrut||""}\nConsignes: salue avec prénom, cite le bien et la ville, 3-4 lignes max, ton pro et chaleureux, invite à préciser ou RDV, termine par "Bien cordialement, [Votre nom]". Uniquement le texte du message.`;
+const t=await geminiText(prompt,apiKey);
+setMsg(t.trim());setStep(“edit”);
+}catch{
+setMsg(`Bonjour ${lead.prenom||""},\n\nMerci pour votre message${lead.bien?" concernant "+lead.bien:""}${lead.ville?" à "+lead.ville:""}. Je serais ravi(e) d'échanger avec vous sur votre projet.\n\nBien cordialement,\n[Votre nom]`);
+setStep(“edit”);
+}finally{setBusy(false)}
+}
+function openWA(){
+window.open(`https://wa.me/${(lead.telephone||"").replace(/\D/g,"")}?text=${encodeURIComponent(msg)}`,”_blank”);
+setStep(“confirm”);
+}
+return <Modal title="💬 Réponse WhatsApp" onClose={onClose}>
+{busy?<div style={{textAlign:“center”,padding:“40px 0”,color:C.muted}}><div style={{fontSize:28,marginBottom:12}}>⏳</div>Génération…</div>:<>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:“uppercase”,letterSpacing:“0.08em”,marginBottom:8}}>Message — modifiable</div>
+<textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={8}
+style={{width:“100%”,padding:“12px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:14,resize:“vertical”,boxSizing:“border-box”,marginBottom:14}}/>
+{step===“edit”&&<div style={{display:“flex”,gap:10}}>
+<Btn full v="ghost" onClick={gen}>↺ Régénérer</Btn>
+<Btn full v="wa" onClick={openWA}>📱 Ouvrir WhatsApp</Btn>
+</div>}
+{step===“confirm”&&<>
+<div style={{padding:“12px 14px”,background:C.orangeD,borderRadius:8,color:C.orange,fontSize:13,marginBottom:14}}>⚠ WhatsApp ouvert. As-tu envoyé le message ?</div>
+<div style={{display:“flex”,gap:10}}>
+<Btn full v="ghost" onClick={openWA}>↺ Rouvrir</Btn>
+<Btn full v=“success” onClick={()=>onConfirm(msg)}>✓ Oui, envoyé</Btn>
+</div>
+</>}
+</>}
+</Modal>
+}
+
+// ── Fiche Lead ────────────────────────────────────────────────────────────────
+function Fiche({lead,onUpdate,onBack,apiKey}){
+const [showWA,setShowWA]=useState(false);
+const [showStatuts,setShowStatuts]=useState(false);
+const [showEdit,setShowEdit]=useState(false);
+const [commentaire,setCommentaire]=useState(lead.commentaire||””);
+const [fd,setFd]=useState({…lead});
+const sfd=k=>v=>setFd(f=>({…f,[k]:v}));
+function hist(a){return[…(lead.historique||[]),{date:new Date().toISOString(),action:a}]}
+function changeStatut(s){onUpdate({…lead,statut:s,historique:hist(`Statut → ${s}`)});setShowStatuts(false)}
+function confirmWA(msg){
+const relances=[{date:addDays(today(),1),label:“Relance J+1”,done:false},{date:addDays(today(),3),label:“Relance J+3”,done:false},{date:addDays(today(),7),label:“Relance J+7”,done:false}];
+onUpdate({…lead,statut:“Message envoyé”,messageEnvoye:true,dernierMessage:msg,relances,historique:hist(“Message WhatsApp envoyé + relances planifiées”)});
+setShowWA(false);
+}
+function markRelance(i){const r=lead.relances.map((x,j)=>j===i?{…x,done:true}:x);onUpdate({…lead,relances:r,historique:hist(`${lead.relances[i].label} effectuée`)})}
+function saveComment(){onUpdate({…lead,commentaire,historique:hist(“Commentaire mis à jour”)})}
+function creerContact(){onUpdate({…lead,contactCree:true,historique:hist(“Contact créé”)})}
+function saveEdit(){onUpdate({…fd,historique:hist(“Fiche modifiée”)});setShowEdit(false)}
+const nom=[lead.prenom,lead.nom].filter(Boolean).join(” “)||“Sans nom”;
+const prio=PRIOS[lead.priorite]||PRIOS[“Normale”];
+return <div>
+{showWA&&<WAModal lead={lead} onConfirm={confirmWA} onClose={()=>setShowWA(false)} apiKey={apiKey}/>}
+<button onClick={onBack} style={{background:“none”,border:“none”,color:C.muted,cursor:“pointer”,fontSize:13,marginBottom:14}}>← Retour</button>
+<div style={{background:C.high,borderRadius:12,padding:18,marginBottom:12}}>
+<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”,flexWrap:“wrap”,gap:8,marginBottom:12}}>
+<div>
+<div style={{fontSize:21,fontWeight:900,color:C.text}}>{nom}</div>
+<div style={{fontSize:12,color:C.muted,marginTop:2}}>{lead.id} · {fmtDate(lead.dateEntree)}</div>
+</div>
+<div style={{display:“flex”,gap:8,alignItems:“center”,flexWrap:“wrap”}}>
+<span style={{fontSize:11,fontWeight:700,color:prio.color}}>{prio.label}</span>
+{Sb(lead.statut)}
+</div>
+</div>
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:6}}>
+{lead.telephone&&<div style={{fontSize:13,color:C.text}}>📞 {lead.telephone}</div>}
+{lead.email&&<div style={{fontSize:13,color:C.text}}>✉ {lead.email}</div>}
+{lead.ville&&<div style={{fontSize:13,color:C.text}}>📍 {lead.ville}</div>}
+{lead.plateforme&&<div style={{fontSize:13,color:C.text}}>🔗 {lead.plateforme}</div>}
+</div>
+{lead.bien&&<div style={{marginTop:10,fontSize:13,color:C.accentL,padding:“6px 10px”,background:C.accentD,borderRadius:6}}>🏠 {lead.bien}</div>}
+</div>
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:10,marginBottom:12}}>
+<Btn v=“wa” onClick={()=>setShowWA(true)}>💬 WhatsApp</Btn>
+<Btn v=“outline” onClick={()=>setShowStatuts(s=>!s)}>⇄ Statut</Btn>
+<Btn v=“ghost” onClick={()=>setShowEdit(s=>!s)}>✎ Modifier</Btn>
+{lead.messageEnvoye&&!lead.contactCree?<Btn v="ghost" onClick={creerContact}>👤 Créer contact</Btn>
+:lead.contactCree?<div style={{display:“flex”,alignItems:“center”,justifyContent:“center”,fontSize:12,color:C.green}}>✓ Contact créé</div>:<div/>}
+</div>
+{showStatuts&&<div style={{background:C.high,borderRadius:10,padding:14,marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:10,textTransform:“uppercase”}}>Changer le statut</div>
+<div style={{display:“flex”,flexWrap:“wrap”,gap:8}}>
+{Object.keys(STATUTS).map(s=><button key={s} onClick={()=>changeStatut(s)}
+style={{padding:“6px 12px”,borderRadius:20,cursor:“pointer”,fontWeight:700,fontSize:12,background:lead.statut===s?STATUTS[s].bg:“transparent”,color:STATUTS[s].color,border:`1px solid ${STATUTS[s].color}66`}}>
+{s}</button>)}
+</div>
+</div>}
+{showEdit&&<div style={{background:C.high,borderRadius:10,padding:14,marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:12,textTransform:“uppercase”}}>Modifier</div>
+<div style={{display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:“0 12px”}}>
+<Inp label=“Prénom” value={fd.prenom} onChange={sfd(“prenom”)}/><Inp label=“Nom” value={fd.nom} onChange={sfd(“nom”)}/>
+</div>
+<Inp label=“Téléphone” value={fd.telephone} onChange={sfd(“telephone”)}/>
+<Inp label=“Email” value={fd.email} onChange={sfd(“email”)}/>
+<Inp label=“Ville” value={fd.ville} onChange={sfd(“ville”)}/>
+<Inp label=“Bien recherché” value={fd.bien} onChange={sfd(“bien”)}/>
+<Sel label=“Plateforme” value={fd.plateforme} onChange={sfd(“plateforme”)} opts={[””,“SeLoger”,“LeBonCoin”,“PAP”,“Bien’ici”,“Logic-Immo”,“WhatsApp”,“Email”,“Autre”]}/>
+<Sel label=“Priorité” value={fd.priorite} onChange={sfd(“priorite”)} opts={[“Haute”,“Normale”,“Basse”]}/>
+<div style={{display:“flex”,gap:10,marginTop:4}}>
+<Btn full v=“ghost” onClick={()=>setShowEdit(false)}>Annuler</Btn>
+<Btn full v="success" onClick={saveEdit}>✓ Enregistrer</Btn>
+</div>
+</div>}
+{lead.relances?.length>0&&<div style={{background:C.high,borderRadius:10,padding:14,marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:10,textTransform:“uppercase”}}>Relances planifiées</div>
+{lead.relances.map((r,i)=><div key={i} style={{display:“flex”,justifyContent:“space-between”,alignItems:“center”,padding:“8px 0”,borderBottom:i<lead.relances.length-1?`1px solid ${C.border}`:“none”}}>
+<div>
+<div style={{fontSize:13,fontWeight:600,color:r.done?C.dim:isPast(r.date)?C.red:C.text}}>{r.label}</div>
+<div style={{fontSize:11,color:r.done?C.dim:isToday(r.date)?C.orange:C.muted}}>
+{r.done?“✓ Effectuée”:isToday(r.date)?“⚡ Aujourd’hui”:isPast(r.date)?“⚠ En retard”:fmtDate(r.date)}
+</div>
+</div>
+{!r.done&&<Btn sm v=“outline” onClick={()=>markRelance(i)}>✓ Fait</Btn>}
+</div>)}
+</div>}
+<div style={{background:C.high,borderRadius:10,padding:14,marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8,textTransform:“uppercase”}}>Commentaire</div>
+<textarea value={commentaire} onChange={e=>setCommentaire(e.target.value)} rows={3}
+style={{width:“100%”,padding:“10px”,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,resize:“vertical”,boxSizing:“border-box”}}/>
+<Btn sm v="ghost" onClick={saveComment} style={{marginTop:8}}>Sauvegarder</Btn>
+</div>
+<div style={{background:C.high,borderRadius:10,padding:14,marginBottom:12}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:10,textTransform:“uppercase”}}>Historique</div>
+{[…(lead.historique||[])].reverse().map((h,i)=><div key={i} style={{display:“flex”,gap:10,paddingBottom:8,marginBottom:8,borderBottom:i<lead.historique.length-1?`1px solid ${C.border}`:“none”}}>
+<div style={{width:6,height:6,borderRadius:“50%”,background:C.accent,marginTop:6,flexShrink:0}}/>
+<div><div style={{fontSize:13,color:C.text}}>{h.action}</div><div style={{fontSize:11,color:C.dim}}>{new Date(h.date).toLocaleString(“fr-FR”)}</div></div>
+</div>)}
+</div>
+{lead.lienPhoto&&<div style={{background:C.high,borderRadius:10,padding:14}}>
+<div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8,textTransform:“uppercase”}}>Photo d’origine</div>
+<img src={lead.lienPhoto} alt=“lead” style={{maxWidth:“100%”,borderRadius:8}}/>
+</div>}
+
+  </div>
+}
+
+// ── Liste ─────────────────────────────────────────────────────────────────────
+function Liste({leads,onSelect}){
+const [q,setQ]=useState(””);
+const [fs,setFs]=useState(””);
+const filtered=leads.filter(l=>{
+const ok=!q||[l.prenom,l.nom,l.telephone,l.ville,l.email].some(v=>v?.toLowerCase().includes(q.toLowerCase()));
+return ok&&(!fs||l.statut===fs);
+}).sort((a,b)=>b.dateEntree.localeCompare(a.dateEntree));
+return <div>
+<div style={{fontSize:22,fontWeight:900,color:C.text,marginBottom:16}}>Tous les leads</div>
+<Inp value={q} onChange={setQ} ph="🔍 Nom, téléphone, ville…"/>
+<div style={{display:“flex”,gap:6,flexWrap:“wrap”,marginBottom:16}}>
+{[””, …Object.keys(STATUTS)].map(s=>{
+const count=s?leads.filter(l=>l.statut===s).length:leads.length;
+if(s&&!count)return null;
+const active=fs===s;
+return <button key={s||“all”} onClick={()=>setFs(s)}
+style={{padding:“4px 12px”,borderRadius:20,cursor:“pointer”,fontWeight:600,fontSize:11,border:`1px solid ${s?STATUTS[s]?.color+"44":C.border}`,background:active?(s?STATUTS[s].bg:C.accent):C.bg,color:active?(s?STATUTS[s].color:”#fff”):(s?STATUTS[s].color:C.muted)}}>
+{s||“Tous”} ({count})</button>;
+})}
+</div>
+{filtered.length===0
+?<div style={{textAlign:“center”,color:C.muted,padding:“40px 0”,fontSize:14}}>{leads.length===0?“Aucun lead enregistré”:“Aucun résultat”}</div>
+:filtered.map(l=>{
+const hr=l.relances?.some(r=>!r.done&&(isToday(r.date)||isPast(r.date)));
+return <div key={l.id} onClick={()=>onSelect(l.id)}
+style={{background:C.high,border:`1px solid ${hr?C.orange+"55":C.border}`,borderRadius:10,padding:14,cursor:“pointer”,marginBottom:8}}>
+<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”}}>
+<div>
+<div style={{fontSize:15,fontWeight:800,color:C.text}}>{[l.prenom,l.nom].filter(Boolean).join(” “)||“Sans nom”}</div>
+<div style={{fontSize:12,color:C.muted,marginTop:2}}>{[l.ville,l.bien].filter(Boolean).join(” · “)||”—”}</div>
+</div>
+<div style={{display:“flex”,flexDirection:“column”,alignItems:“flex-end”,gap:4}}>
+{Sb(l.statut,true)}
+{hr&&<span style={{fontSize:10,color:C.orange,fontWeight:700}}>⚡ Relance</span>}
+</div>
+</div>
+<div style={{display:“flex”,justifyContent:“space-between”,marginTop:8}}>
+<span style={{fontSize:11,color:C.dim}}>{l.telephone||”—”} · {l.plateforme||”—”}</span>
+<span style={{fontSize:11,fontWeight:700,color:(PRIOS[l.priorite]||PRIOS[“Normale”]).color}}>{(PRIOS[l.priorite]||PRIOS[“Normale”]).label}</span>
+</div>
+</div>;
+})
+}
+
+  </div>
+}
+
+// ── Relances ──────────────────────────────────────────────────────────────────
+function Relances({leads,onSelect}){
+const t=[],r=[];
+leads.forEach(l=>(l.relances||[]).forEach((x,i)=>{
+if(!x.done){if(isToday(x.date))t.push({lead:l,r:x,i});else if(isPast(x.date))r.push({lead:l,r:x,i})}
+}));
+const Sec=({title,items,color})=><div style={{marginBottom:22}}>
+<div style={{fontSize:12,fontWeight:800,color,textTransform:“uppercase”,letterSpacing:“0.06em”,marginBottom:10}}>{title} ({items.length})</div>
+{items.length===0?<div style={{fontSize:13,color:C.dim}}>Aucune</div>
+:items.map(({lead,r})=><div key={lead.id+r.label} onClick={()=>onSelect(lead.id)}
+style={{background:C.high,border:`1px solid ${color}33`,borderRadius:10,padding:14,cursor:“pointer”,marginBottom:8}}>
+<div style={{display:“flex”,justifyContent:“space-between”,alignItems:“flex-start”}}>
+<div>
+<div style={{fontSize:14,fontWeight:800,color:C.text}}>{[lead.prenom,lead.nom].filter(Boolean).join(” “)||“Sans nom”}</div>
+<div style={{fontSize:12,color:C.muted}}>{r.label} · {lead.ville||”—”}</div>
+</div>
+{Sb(lead.statut,true)}
+</div>
+<div style={{fontSize:12,color:C.muted,marginTop:6}}>{lead.telephone||”—”}</div>
+</div>)
+}
+
+  </div>;
+  return <div>
+    <div style={{fontSize:22,fontWeight:900,color:C.text,marginBottom:4}}>Relances du jour</div>
+    <div style={{fontSize:13,color:C.muted,marginBottom:22}}>{fmtDate(today())}</div>
+    {t.length===0&&r.length===0
+      ?<div style={{textAlign:"center",padding:"60px 0"}}>
+        <div style={{fontSize:40,marginBottom:12}}>✓</div>
+        <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:6}}>Tout est à jour</div>
+        <div style={{fontSize:13,color:C.muted}}>Aucune relance prévue aujourd'hui</div>
+      </div>
+      :<><Sec title="⚡ Aujourd'hui" items={t} color={C.orange}/><Sec title="⚠ En retard" items={r} color={C.red}/></>
+    }
+  </div>
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App(){
+const [apiKey,setApiKey]=useState(getKey());
+const [leads,setLeads]=useState(loadLeads);
+const [view,setView]=useState(“relances”);
+const [selId,setSelId]=useState(null);
+const [showExport,setShowExport]=useState(false);
+
+useEffect(()=>{saveLeads(leads)},[leads]);
+
+if(!apiKey) return <SetupKey onSaved={()=>setApiKey(getKey())}/>;
+
+function addLead(l){setLeads(ls=>[l,…ls]);setSelId(l.id);setView(“fiche”)}
+function updLead(l){setLeads(ls=>ls.map(x=>x.id===l.id?l:x))}
+function selLead(id){setSelId(id);setView(“fiche”)}
+const sel=leads.find(l=>l.id===selId);
+const badge=leads.reduce((a,l)=>a+(l.relances||[]).filter(r=>!r.done&&(isToday(r.date)||isPast(r.date))).length,0);
+const NAV=[{id:“relances”,label:“Relances”,icon:“⚡”,badge},{id:“liste”,label:“Leads”,icon:“☰”,badge:leads.length},{id:“nouveau”,label:“Nouveau”,icon:”+”,accent:true}];
+
+function exportCSV(){
+const h=[“ID”,“Date”,“Prénom”,“Nom”,“Téléphone”,“Email”,“Ville”,“Bien”,“Plateforme”,“Statut”,“Priorité”,“Commentaire”];
+const rows=leads.map(l=>[l.id,l.dateEntree,l.prenom,l.nom,l.telephone,l.email,l.ville,l.bien,l.plateforme,l.statut,l.priorite,l.commentaire].map(v=>`"${(v||"").replace(/"/g,'""')}"`).join(”,”));
+const a=document.createElement(“a”);
+a.href=URL.createObjectURL(new Blob([”\uFEFF”+[h.join(”,”),…rows].join(”\n”)],{type:“text/csv;charset=utf-8;”}));
+a.download=`leads_${today()}.csv`;a.click();
+}
+
+return <div style={{minHeight:“100vh”,background:C.bg,color:C.text,fontFamily:”‘Segoe UI’,sans-serif”,maxWidth:640,margin:“0 auto”,paddingBottom:80}}>
+<div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:“14px 20px”,display:“flex”,justifyContent:“space-between”,alignItems:“center”,position:“sticky”,top:0,zIndex:100}}>
+<div>
+<div style={{fontSize:16,fontWeight:900,color:C.text,letterSpacing:”-0.02em”}}>Gestion Leads</div>
+<div style={{fontSize:10,color:C.dim,fontWeight:600,textTransform:“uppercase”,letterSpacing:“0.08em”}}>V1 · Acheteurs</div>
+</div>
+<div style={{display:“flex”,gap:8,alignItems:“center”}}>
+<button onClick={()=>setShowExport(true)} style={{background:C.high,border:`1px solid ${C.border}`,borderRadius:8,padding:“6px 12px”,color:C.muted,fontSize:12,cursor:“pointer”}}>↓ CSV</button>
+<button onClick={()=>{if(confirm(“Changer la clé API Gemini ?”))localStorage.removeItem(“gl_gemini_key”);setApiKey(””)}} style={{background:C.high,border:`1px solid ${C.border}`,borderRadius:8,padding:“6px 10px”,color:C.dim,fontSize:12,cursor:“pointer”}}>🔑</button>
+</div>
+</div>
+<div style={{padding:“20px 16px”}}>
+{view===“fiche”&&sel?<Fiche lead={sel} onUpdate={updLead} onBack={()=>setView(“liste”)} apiKey={apiKey}/>
+:view===“nouveau”?<NouveauLead onLeadCreated={addLead} apiKey={apiKey}/>
+:view===“liste”?<Liste leads={leads} onSelect={selLead}/>
+:<Relances leads={leads} onSelect={selLead}/>}
+</div>
+<div style={{position:“fixed”,bottom:0,left:“50%”,transform:“translateX(-50%)”,width:“100%”,maxWidth:640,background:C.surface,borderTop:`1px solid ${C.border}`,display:“flex”,zIndex:200}}>
+{NAV.map(n=><button key={n.id} onClick={()=>setView(n.id)}
+style={{flex:1,padding:“12px 0”,background:n.accent?C.accent:“transparent”,border:“none”,cursor:“pointer”,color:n.accent?”#fff”:view===n.id?C.accent:C.dim,display:“flex”,flexDirection:“column”,alignItems:“center”,gap:2,borderTop:!n.accent&&view===n.id?`2px solid ${C.accent}`:“2px solid transparent”}}>
+<div style={{fontSize:18,position:“relative”}}>
+{n.icon}
+{n.badge>0&&<span style={{position:“absolute”,top:-4,right:-8,background:n.id===“relances”?C.orange:C.accent,color:”#fff”,borderRadius:10,fontSize:9,fontWeight:800,padding:“1px 4px”,minWidth:14,textAlign:“center”}}>{n.badge}</span>}
+</div>
+<div style={{fontSize:10,fontWeight:700,letterSpacing:“0.04em”}}>{n.label}</div>
+</button>)}
+</div>
+{showExport&&<Modal title=“Export CSV” onClose={()=>setShowExport(false)} w={360}>
+<div style={{fontSize:14,color:C.muted,marginBottom:20}}>Exporter {leads.length} lead(s) en CSV ?</div>
+<div style={{display:“flex”,gap:10}}>
+<Btn full v=“ghost” onClick={()=>setShowExport(false)}>Annuler</Btn>
+<Btn full v=“success” onClick={()=>{exportCSV();setShowExport(false);}}>↓ Télécharger</Btn>
+</div>
+</Modal>}
+
+  </div>
+}
+
+ReactDOM.createRoot(document.getElementById(“root”)).render(<App/>);
+</script>
+
+</body>
+</html>
