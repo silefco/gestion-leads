@@ -138,31 +138,32 @@ function fireNotif(){
 }
 
 // ── Gemini ────────────────────────────────────────────────────────────────────
-var GURL=function(k){return"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+k};
+var GURL=function(k){return"https://api.groq.com/openai/v1/chat/completions"};
 function gText(txt,key,cb){
-  fetch(GURL(key),{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({contents:[{parts:[{text:txt}]}],generationConfig:{temperature:0.7,maxOutputTokens:400}})
+  fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+    body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"user",content:txt}],max_tokens:400,temperature:0.7})
   }).then(function(r){return r.json()}).then(function(d){
-    if(d.error){cb(d.error.message,"");return}
-    cb(null,((d.candidates||[])[0]||{content:{parts:[{text:""}]}}).content.parts.map(function(p){return p.text||""}).join("").trim());
+    if(d.error){cb(typeof d.error==="string"?d.error:(d.error.message||JSON.stringify(d.error)),"");return}
+    cb(null,((d.choices||[])[0]||{message:{content:""}}).message.content.trim()||"");
   }).catch(function(e){cb(e.message,"")});
 }
 function gVision(b64,mime,key,cb){
-  var p="Tu es expert en captures d'écran immobilières.\nLis TOUT le texte visible (emails LeBonCoin, SeLoger, PAP, etc.) et extrais les infos de l'acheteur.\nRéponds UNIQUEMENT avec ce JSON (rien d'autre) :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\n- prenom/nom : cherche De:, From:, Nom: ou corps du message. Incertain = tout dans nom.\n- telephone : tout numéro (+33, 06, 07…)\n- email : toute adresse email\n- ville : ville ou secteur dans l'objet ou le corps\n- bien : type de bien (souvent dans l'objet de l'email)\n- plateforme : leboncoin.fr=LeBonCoin seloger.com=SeLoger pap.fr=PAP bienici.com=Bien'ici logic-immo.com=Logic-Immo WhatsApp=WhatsApp email direct=Email sinon=Autre\n- messageBrut : texte complet du message\nChamp absent = laisser vide.";
-  fetch(GURL(key),{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:mime,data:b64}},{text:p}]}],generationConfig:{temperature:0.1,maxOutputTokens:800}})
+  var p="Tu es expert en captures d'écran immobilières (emails LeBonCoin, SeLoger, PAP, etc.).\nLis TOUT le texte visible et extrais les infos acheteur.\nRéponds UNIQUEMENT avec ce JSON (rien d'autre) :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\nplateforme: leboncoin=LeBonCoin seloger=SeLoger pap=PAP bienici=Bien\'ici sinon=Autre\nChamp absent = vide.";
+  fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+    body:JSON.stringify({model:"llama-3.2-90b-vision-preview",messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mime+";base64,"+b64}},{type:"text",text:p}]}],max_tokens:800,temperature:0.1})
   }).then(function(r){return r.json()}).then(function(d){
-    if(d.error){cb(d.error.message,null);return}
-    var txt=((d.candidates||[])[0]||{content:{parts:[{text:""}]}}).content.parts.map(function(p){return p.text||""}).join("");
+    if(d.error){cb(typeof d.error==="string"?d.error:d.error.message||JSON.stringify(d.error),null);return}
+    var txt=((d.choices||[])[0]||{message:{content:""}}).message.content||"";
     var m=txt.match(/\{[\s\S]*\}/);
     if(!m){cb("Pas de JSON",null);return}
     try{cb(null,JSON.parse(m[0]))}catch(e){cb("JSON invalide",null)}
   }).catch(function(e){cb(e.message,null)});
 }
 
-// ── Setup ─────────────────────────────────────────────────────────────────────
 function renderSetup(){
-  var ki=el("input",{type:"text",placeholder:"AIza...",style:"margin-bottom:12px"});
+  var ki=el("input",{type:"text",placeholder:"gsk_...",style:"margin-bottom:12px"});
   var ed=el("div",{style:"display:none;padding:10px;background:#450A0A;border-radius:8px;color:#EF4444;font-size:13px;margin-bottom:12px"});
   var btn=el("button",{class:"btn btn-success btn-full"});btn.textContent="✓ Démarrer";
   btn.onclick=function(){
@@ -177,7 +178,7 @@ function renderSetup(){
   var box=el("div",{style:"background:#181C27;border:1px solid #2A2F42;border-radius:12px;padding:20px"});
   box.appendChild(el("div",{class:"label"},"Clé API Gemini"));
   box.appendChild(ki);box.appendChild(ed);box.appendChild(btn);
-  box.appendChild(el("p",{style:"margin-top:14px;font-size:12px;color:#475569;text-align:center"},"Clé gratuite sur aistudio.google.com"));
+  box.appendChild(el("p",{style:"margin-top:14px;font-size:12px;color:#475569;text-align:center"},"Clé gratuite sur console.groq.com"));
   var wrap=el("div",{class:"setup-screen"});
   var inner=el("div",{style:"width:100%;max-width:400px"});
   inner.innerHTML="<div style='text-align:center;margin-bottom:28px'><div style='font-size:48px;margin-bottom:12px'>🔑</div><div style='font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:8px'>Gestion Leads</div><div style='font-size:14px;color:#94A3B8;line-height:1.6'>Entre ta clé API Gemini pour démarrer.<br/>Sauvegardée sur cet appareil uniquement.</div></div>";
