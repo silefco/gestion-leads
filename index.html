@@ -55,6 +55,12 @@ textarea{resize:vertical}
 .stat-num{font-size:30px;font-weight:900;line-height:1}
 .stat-label{font-size:11px;color:#94A3B8;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
 .notif-bar{background:#1D3557;border:1px solid #3B82F6;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+@media(min-width:700px){
+  .nouveau-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+  .nouveau-left{position:sticky;top:80px}
+}
+.ctx-btn{padding:6px 12px;border-radius:20px;cursor:pointer;font-weight:600;font-size:12px;border:1px solid #2A2F42;background:#0F1117;color:#94A3B8;transition:all 0.15s}
+.ctx-btn.active{background:#1D3557;color:#3B82F6;border-color:#3B82F6}
 </style>
 </head>
 <body>
@@ -89,6 +95,8 @@ function getKey(){return localStorage.getItem("gl_key")||""}
 function saveKey(k){localStorage.setItem("gl_key",k)}
 function loadLeads(){try{return JSON.parse(localStorage.getItem("gl_v1")||"[]")}catch(e){return[]}}
 function saveLeads(l){localStorage.setItem("gl_v1",JSON.stringify(l))}
+function loadConsignes(){return localStorage.getItem("gl_consignes")||""}
+function saveConsignes(c){localStorage.setItem("gl_consignes",c)}
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var state={leads:loadLeads(),view:"relances",selectedId:null,apiKey:getKey()};
@@ -200,7 +208,13 @@ function renderNouveau(){
   root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:4px"},"Nouveau lead"));
   root.appendChild(el("div",{style:"font-size:13px;color:#94A3B8;margin-bottom:20px"},"Photo → Analyse IA → Validation"));
 
-  var imgPrev=el("img",{style:"max-height:180px;max-width:100%;border-radius:8px;display:none;margin:0 auto 8px"});
+  // PC 2-col wrapper
+  var layout=el("div",{class:"nouveau-layout"});
+  var leftCol=el("div",{class:"nouveau-left"});
+  var rightCol=el("div");
+  root.appendChild(layout);
+
+  var imgPrev=el("img",{style:"max-height:340px;max-width:100%;border-radius:8px;display:none;margin:0 auto 8px"});
   var hint=el("div");hint.innerHTML="<div style='font-size:38px;margin-bottom:8px'>📷</div><div style='font-size:15px;font-weight:700;color:#F1F5F9;margin-bottom:6px'>Ajouter une photo / capture</div><div style='font-size:12px;color:#94A3B8'>Appuyer pour sélectionner</div>";
   var chgHint=el("div",{style:"font-size:12px;color:#60A5FA;display:none"},"📷 Appuyer pour changer");
   var fi=el("input",{type:"file",accept:"image/*",style:"display:none"});
@@ -226,8 +240,8 @@ function renderNouveau(){
 
   var aBtn=el("button",{class:"btn btn-primary btn-full",style:"margin-bottom:8px;display:none"});aBtn.textContent="🔍 Analyser l'image";
   var prog=el("div",{class:"progress",style:"display:none"},[el("div",{class:"progress-bar"})]);
-  root.appendChild(aBtn);root.appendChild(prog);
-  var msgD=el("div",{style:"display:none"});root.appendChild(msgD);
+  leftCol.appendChild(aBtn);leftCol.appendChild(prog);
+  var msgD=el("div",{style:"display:none"});leftCol.appendChild(msgD);
 
   // Form inputs
   var pi=el("input",{type:"text",placeholder:"Prénom"});
@@ -305,6 +319,8 @@ function renderNouveau(){
       fDiv.style.display="block";
     });
   };
+  // Assemble 2-col layout
+  layout.appendChild(leftCol);layout.appendChild(rightCol);
   return root;
 }
 
@@ -312,16 +328,52 @@ function renderNouveau(){
 function openWA(lead){
   var bg=el("div",{class:"modal-bg"});
   var mod=el("div",{class:"modal",style:"max-width:520px"});
-  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"});
+  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"});
   hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"💬 Réponse WhatsApp"));
   var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
   cx.onclick=function(){document.body.removeChild(bg)};
   hdr.appendChild(cx);mod.appendChild(hdr);
+
+  // Context selector
+  var ctxDiv=el("div",{style:"margin-bottom:16px"});
+  ctxDiv.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Contexte du message"));
+  var ctxRow=el("div",{style:"display:flex;gap:8px;flex-wrap:wrap"});
+  var ctxs=[{id:"nouveau",label:"🆕 Premier contact"},{id:"relance",label:"🔄 Relance"},{id:"echange",label:"💬 En échange"},{id:"apres_rdv",label:"🤝 Après RDV"}];
+  var currentCtx=lead._contexteWA||"nouveau";
+  ctxs.forEach(function(c){
+    var b=el("button",{class:"ctx-btn"+(currentCtx===c.id?" active":"")});b.textContent=c.label;
+    b.onclick=function(){
+      currentCtx=c.id;
+      ctxRow.querySelectorAll(".ctx-btn").forEach(function(x){x.className="ctx-btn"});
+      b.className="ctx-btn active";
+      // Update lead context for regeneration
+      lead._contexteWA=c.id;
+    };
+    ctxRow.appendChild(b);
+  });
+  ctxDiv.appendChild(ctxRow);
+
+  // Show consignes if set
+  var cons=loadConsignes();
+  if(cons){
+    var consDiv=el("div",{style:"padding:8px 12px;background:#1E2333;border-radius:8px;border-left:3px solid #3B82F6;margin-top:10px;font-size:12px;color:#94A3B8"});
+    consDiv.innerHTML="📋 <strong style='color:#60A5FA'>Tes consignes :</strong> "+cons.substring(0,100)+(cons.length>100?"…":"");
+    ctxDiv.appendChild(consDiv);
+  }
+  mod.appendChild(ctxDiv);
   var ld=el("div",{style:"text-align:center;padding:40px 0;color:#94A3B8"});
   ld.innerHTML="<div style='font-size:28px;margin-bottom:12px'>⏳</div>Génération du message…";
   mod.appendChild(ld);bg.appendChild(mod);document.body.appendChild(bg);
 
-  var prompt="Génère un message WhatsApp professionnel et chaleureux pour un acheteur immobilier.\nPrénom:"+(lead.prenom||"")+" | Ville:"+(lead.ville||"")+" | Bien:"+(lead.bien||"")+" | Plateforme:"+(lead.plateforme||"")+"\nMessage original:"+(lead.messageBrut||"")+"\nConsignes: salue avec prénom, cite le bien et la ville, 3-4 lignes max, ton pro et chaleureux, invite à préciser ou prendre RDV, termine par 'Bien cordialement, [Votre nom]'. Uniquement le texte du message.";
+  var consignes=loadConsignes();
+  var contexte=lead._contexteWA||"nouveau";
+  var toneMap={"nouveau":"C'est le premier contact. Ton chaleureux, se présenter, montrer de l'intérêt pour le projet.","relance":"Pas de réponse au premier message. Ton de rappel poli et bienveillant, sans insistance.","echange":"Déjà en échange. Ton de suivi naturel, continuer la conversation.","apres_rdv":"Suite à un rendez-vous. Ton de remerciement, rappeler les points clés, proposer la prochaine étape."};
+  var toneInstruction=toneMap[contexte]||toneMap["nouveau"];
+  var prompt="Génère un message WhatsApp pour un acheteur immobilier.\nPrénom:"+(lead.prenom||"")+" | Ville:"+(lead.ville||"")+" | Bien:"+(lead.bien||"")+" | Plateforme:"+(lead.plateforme||"")+
+"\nMessage original:"+(lead.messageBrut||"")+
+"\nContexte: "+toneInstruction+
+(consignes?"\nConsignes personnelles à respecter absolument: "+consignes:"")+
+"\nFormat: 3-4 lignes max, termine par 'Bien cordialement, [Votre nom]'. Uniquement le texte du message.";
 
   gText(prompt,state.apiKey,function(err,txt){
     var msg=txt||"Bonjour "+(lead.prenom||"")+",\n\nMerci pour votre message"+(lead.bien?" concernant "+lead.bien:"")+(lead.ville?" à "+lead.ville:"")+". Je serais ravi(e) d'échanger avec vous.\n\nBien cordialement,\n[Votre nom]";
@@ -359,7 +411,26 @@ function openWA(lead){
         if(l.id!==lead.id)return l;
         return Object.assign({},l,{statut:"Message envoyé",messageEnvoye:true,dernierMessage:ta.value,relances:rl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Message WhatsApp envoyé · relances J+1/J+3/J+7 planifiées"}])});
       });
-      setState({leads:upd});document.body.removeChild(bg);
+      setState({leads:upd});
+
+      // Proposer de copier le contact
+      var nom=[lead.prenom,lead.nom].filter(Boolean).join(" ");
+      if(nom&&lead.telephone){
+        var copyDiv=el("div",{style:"margin-top:14px"});
+        var okBox=el("div",{class:"ok-box",style:"margin-bottom:10px"});okBox.textContent="✓ Message confirmé ! Relances J+1/J+3/J+7 planifiées.";
+        var copyBtn=el("button",{class:"btn btn-ghost btn-full"});
+        copyBtn.textContent="📋 Copier le contact ("+nom+" · "+lead.telephone+")";
+        copyBtn.onclick=function(){
+          var txt=nom+"\n"+lead.telephone+(lead.email?"\n"+lead.email:"")+(lead.ville?"\nVille: "+lead.ville:"");
+          navigator.clipboard.writeText(txt).then(function(){copyBtn.textContent="✓ Copié ! Colle dans tes contacts téléphone";copyBtn.style.color="#10B981";copyBtn.style.borderColor="#10B981"});
+        };
+        var closeBtn2=el("button",{class:"btn btn-ghost btn-full",style:"margin-top:8px"});closeBtn2.textContent="Fermer";
+        closeBtn2.onclick=function(){document.body.removeChild(bg)};
+        copyDiv.appendChild(okBox);copyDiv.appendChild(copyBtn);copyDiv.appendChild(closeBtn2);
+        cd.innerHTML="";cd.appendChild(copyDiv);
+      } else {
+        document.body.removeChild(bg);
+      }
     };
   });
 }
@@ -681,6 +752,39 @@ function renderDashboard(){
   return root;
 }
 
+// ── Consignes Modal ──────────────────────────────────────────────────────────
+function openConsignes(){
+  var bg=el("div",{class:"modal-bg"});
+  var mod=el("div",{class:"modal",style:"max-width:480px"});
+  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"});
+  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"⚙ Mes consignes"));
+  var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
+  cx.onclick=function(){document.body.removeChild(bg)};
+  hdr.appendChild(cx);mod.appendChild(hdr);
+
+  var info=el("div",{style:"padding:12px 14px;background:#1E2333;border-radius:8px;margin-bottom:16px;font-size:13px;color:#94A3B8;line-height:1.6"});
+  info.innerHTML="Ces consignes seront intégrées à chaque message WhatsApp généré.<br><strong style='color:#F1F5F9'>Exemples :</strong> "Signe avec Julien + 06XXXXXXXX", "Mentionne toujours ta dispo le weekend", "Ne jamais utiliser le mot investissement"";
+  mod.appendChild(info);
+
+  mod.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Tes consignes personnelles"));
+  var ta=el("textarea",{rows:"6",placeholder:"Ex: Toujours signer avec mon prénom et mon numéro. Mentionner ma disponibilité pour visites le weekend. Rester concis, max 3 lignes..."});
+  ta.value=loadConsignes();
+  ta.style.cssText="width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:14px";
+  mod.appendChild(ta);
+
+  var row=el("div",{style:"display:flex;gap:10px"});
+  var clearBtn=el("button",{class:"btn btn-ghost btn-full"});clearBtn.textContent="🗑 Effacer";
+  clearBtn.onclick=function(){ta.value="";saveConsignes("");clearBtn.textContent="✓ Effacé"};
+  var saveBtn=el("button",{class:"btn btn-success btn-full"});saveBtn.textContent="✓ Sauvegarder";
+  saveBtn.onclick=function(){
+    saveConsignes(ta.value.trim());
+    saveBtn.textContent="✓ Sauvegardé !";
+    setTimeout(function(){document.body.removeChild(bg)},800);
+  };
+  row.appendChild(clearBtn);row.appendChild(saveBtn);mod.appendChild(row);
+  bg.appendChild(mod);document.body.appendChild(bg);
+}
+
 // ── Render ────────────────────────────────────────────────────────────────────
 function render(){
   var app=qs("#app");app.innerHTML="";
@@ -701,8 +805,8 @@ function render(){
     a.download="leads_"+today()+".csv";a.click();
   };
   var kb=el("button",{class:"btn btn-ghost btn-sm"});kb.textContent="🔑";
-  kb.onclick=function(){if(confirm("Changer la clé API Gemini ?")){localStorage.removeItem("gl_key");setState({apiKey:""})}};
-  hb.appendChild(cb);hb.appendChild(kb);header.appendChild(hb);app.appendChild(header);
+  kb.onclick=function(){if(confirm("Changer la clé API Groq ?")){localStorage.removeItem("gl_key");setState({apiKey:""})}};
+  var setBtn=el("button",{class:"btn btn-ghost btn-sm"});setBtn.textContent="⚙";setBtn.onclick=function(){openConsignes()};hb.appendChild(cb);hb.appendChild(setBtn);hb.appendChild(kb);header.appendChild(hb);app.appendChild(header);
 
   var content=el("div",{class:"content"});
   var lead=state.leads.find(function(l){return l.id===state.selectedId});
@@ -730,4 +834,3 @@ if(state.apiKey)fireNotif();
 </script>
 </body>
 </html>
-
