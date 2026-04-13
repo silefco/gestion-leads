@@ -55,9 +55,10 @@ textarea{resize:vertical}
 .stat-num{font-size:30px;font-weight:900;line-height:1}
 .stat-label{font-size:11px;color:#94A3B8;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
 .notif-bar{background:#1D3557;border:1px solid #3B82F6;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-@media(min-width:700px){
-  .nouveau-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
-  .nouveau-left{position:sticky;top:80px}
+@media(min-width:640px){
+  .nouveau-layout{display:grid !important;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+  .nouveau-left{position:sticky;top:80px;max-height:calc(100vh - 100px);overflow-y:auto}
+  .nouveau-layout .upload-zone{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 }
 .ctx-btn{padding:6px 12px;border-radius:20px;cursor:pointer;font-weight:600;font-size:12px;border:1px solid #2A2F42;background:#0F1117;color:#94A3B8;transition:all 0.15s}
 .ctx-btn.active{background:#1D3557;color:#3B82F6;border-color:#3B82F6}
@@ -97,6 +98,8 @@ function loadLeads(){try{return JSON.parse(localStorage.getItem("gl_v1")||"[]")}
 function saveLeads(l){localStorage.setItem("gl_v1",JSON.stringify(l))}
 function loadConsignes(){return localStorage.getItem("gl_consignes")||""}
 function saveConsignes(c){localStorage.setItem("gl_consignes",c)}
+function loadSignature(){return localStorage.getItem("gl_signature")||""}
+function saveSignature(s){localStorage.setItem("gl_signature",s)}
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var state={leads:loadLeads(),view:"relances",selectedId:null,apiKey:getKey()};
@@ -356,6 +359,7 @@ function openWA(lead){
   mod.appendChild(ld);bg.appendChild(mod);document.body.appendChild(bg);
 
   var consignes=loadConsignes();
+  var signature=loadSignature();
   var contexte=lead._contexteWA||"nouveau";
   var toneMap={"nouveau":"C'est le premier contact. Ton chaleureux, se présenter, montrer de l'intérêt pour le projet.","relance":"Pas de réponse au premier message. Ton de rappel poli et bienveillant, sans insistance.","echange":"Déjà en échange. Ton de suivi naturel, continuer la conversation.","apres_rdv":"Suite à un rendez-vous. Ton de remerciement, rappeler les points clés, proposer la prochaine étape."};
   var toneInstruction=toneMap[contexte]||toneMap["nouveau"];
@@ -363,7 +367,8 @@ function openWA(lead){
 "\nMessage original:"+(lead.messageBrut||"")+
 "\nContexte: "+toneInstruction+
 (consignes?"\nConsignes personnelles à respecter absolument: "+consignes:"")+
-"\nFormat: 3-4 lignes max, termine par 'Bien cordialement, [Votre nom]'. Uniquement le texte du message.";
++(signature?"\nUtilise cette signature exacte : "+signature:"\nTermine par Bien cordialement, [Votre nom]")+
+"\nFormat: 3-4 lignes max. Uniquement le texte du message.";
 
   gText(prompt,state.apiKey,function(err,txt){
     var msg=txt||"Bonjour "+(lead.prenom||"")+",\n\nMerci pour votre message"+(lead.bien?" concernant "+lead.bien:"")+(lead.ville?" à "+lead.ville:"")+". Je serais ravi(e) d'échanger avec vous.\n\nBien cordialement,\n[Votre nom]";
@@ -413,15 +418,26 @@ function openWA(lead){
       if(nom&&lead.telephone){
         var copyDiv=el("div",{style:"margin-top:14px"});
         var okBox=el("div",{class:"ok-box",style:"margin-bottom:10px"});okBox.textContent="✓ Message confirmé ! Relances J+1/J+3/J+7 planifiées.";
-        var copyBtn=el("button",{class:"btn btn-ghost btn-full"});
-        copyBtn.textContent="📋 Copier le contact ("+nom+" · "+lead.telephone+")";
-        copyBtn.onclick=function(){
-          var txt=nom+"\n"+lead.telephone+(lead.email?"\n"+lead.email:"")+(lead.ville?"\nVille: "+lead.ville:"");
-          navigator.clipboard.writeText(txt).then(function(){copyBtn.textContent="✓ Copié ! Colle dans tes contacts téléphone";copyBtn.style.color="#10B981";copyBtn.style.borderColor="#10B981"});
+        // VCF contact button
+        var vcfBtn=el("button",{class:"btn btn-outline btn-full"});
+        vcfBtn.textContent="👤 Enregistrer le contact (.vcf)";
+        vcfBtn.onclick=function(){
+          var vcf="BEGIN:VCARD\nVERSION:3.0\nFN:"+nom+"\nTEL:"+lead.telephone+(lead.email?"\nEMAIL:"+lead.email:"")+(lead.ville?"\nADR:;;;"+lead.ville+";;;":"")+"\nNOTE:Lead "+lead.plateforme+" - "+fmtDate(lead.dateEntree)+"\nEND:VCARD";
+          var a=document.createElement("a");
+          a.href=URL.createObjectURL(new Blob([vcf],{type:"text/vcard"}));
+          a.download=nom.replace(/ /g,"_")+".vcf";a.click();
+          vcfBtn.textContent="✓ Téléchargé ! Ouvre le fichier pour ajouter le contact";
+          vcfBtn.style.color="#10B981";vcfBtn.style.borderColor="#10B981";
         };
+
+        // Email relance button
+        var emailBtn=el("button",{class:"btn btn-ghost btn-full",style:"margin-top:8px"});
+        emailBtn.textContent="✉ Préparer email de relance J+1";
+        emailBtn.onclick=function(){document.body.removeChild(bg);openEmailModal(lead)};
+
         var closeBtn2=el("button",{class:"btn btn-ghost btn-full",style:"margin-top:8px"});closeBtn2.textContent="Fermer";
         closeBtn2.onclick=function(){document.body.removeChild(bg)};
-        copyDiv.appendChild(okBox);copyDiv.appendChild(copyBtn);copyDiv.appendChild(closeBtn2);
+        copyDiv.appendChild(okBox);copyDiv.appendChild(vcfBtn);copyDiv.appendChild(emailBtn);copyDiv.appendChild(closeBtn2);
         cd.innerHTML="";cd.appendChild(copyDiv);
       } else {
         document.body.removeChild(bg);
@@ -553,12 +569,21 @@ function renderFiche(lead){
       rd.textContent=r.done?"✓ Effectuée":isToday(r.date)?"⚡ Aujourd'hui":isPast(r.date)?"⚠ En retard":fmtDate(r.date);
       rl.appendChild(rd);rr.appendChild(rl);
       if(!r.done){
+        var rBtns=el("div",{style:"display:flex;gap:6px;flex-wrap:wrap"});
         var db=el("button",{class:"btn btn-outline btn-sm"});db.textContent="✓ Fait";
         (function(idx){db.onclick=function(){
           var nrl=lead.relances.map(function(x,j){return j===idx?Object.assign({},x,{done:true}):x});
           var upd=state.leads.map(function(l){return l.id===lead.id?Object.assign({},l,{relances:nrl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:lead.relances[idx].label+" effectuée"}])})  :l});
           setState({leads:upd,selectedId:lead.id});
-        }})(i);rr.appendChild(db);
+        }})(i);
+        rBtns.appendChild(db);
+        // Email button for due relances
+        if(isToday(r.date)||isPast(r.date)){
+          var emBtn=el("button",{class:"btn btn-ghost btn-sm"});emBtn.textContent="✉ Email";
+          (function(ll){emBtn.onclick=function(){openEmailModal(ll)}})(lead);
+          rBtns.appendChild(emBtn);
+        }
+        rr.appendChild(rBtns);
       }
       rc.appendChild(rr);
     });root.appendChild(rc);
@@ -747,32 +772,139 @@ function renderDashboard(){
   return root;
 }
 
-// ── Consignes Modal ──────────────────────────────────────────────────────────
-function openConsignes(){
+// ── Email Modal ───────────────────────────────────────────────────────────────
+function openEmailModal(lead){
   var bg=el("div",{class:"modal-bg"});
-  var mod=el("div",{class:"modal",style:"max-width:480px"});
-  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"});
-  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"⚙ Mes consignes"));
+  var mod=el("div",{class:"modal",style:"max-width:560px"});
+  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"});
+  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"✉ Email de relance"));
   var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
   cx.onclick=function(){document.body.removeChild(bg)};
   hdr.appendChild(cx);mod.appendChild(hdr);
 
-  var info=el("div",{style:"padding:12px 14px;background:#1E2333;border-radius:8px;margin-bottom:16px;font-size:13px;color:#94A3B8;line-height:1.6"});
-  info.innerHTML="Ces consignes sont intégrées à chaque message WhatsApp. Ex: Signe avec ton prénom + numéro. Mentionne ta dispo le weekend. Max 3 lignes.";
-  mod.appendChild(info);
+  // Instructions libres
+  var instrDiv=el("div",{style:"margin-bottom:14px"});
+  instrDiv.appendChild(el("div",{class:"label",style:"margin-bottom:6px"},"Instructions pour cet email (optionnel)"));
+  var instrTA=el("textarea",{rows:"2",placeholder:"Ex: Mentionne la visite possible ce weekend · Parle du prix · Sois plus formel…"});
+  instrTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box";
+  instrDiv.appendChild(instrTA);mod.appendChild(instrDiv);
 
-  mod.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Tes consignes personnelles"));
-  var ta=el("textarea",{rows:"6",placeholder:"Ex: Toujours signer avec mon prénom et mon numéro. Mentionner ma disponibilité pour visites le weekend. Rester concis, max 3 lignes..."});
-  ta.value=loadConsignes();
-  ta.style.cssText="width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:14px";
-  mod.appendChild(ta);
+  var loading=el("div",{style:"text-align:center;padding:30px 0;color:#94A3B8"});
+  loading.innerHTML="<div style='font-size:24px;margin-bottom:8px'>⏳</div>Génération de l'email…";
+  mod.appendChild(loading);bg.appendChild(mod);document.body.appendChild(bg);
+
+  var signature=loadSignature();
+  var consignes=loadConsignes();
+
+  function genEmail(instr){
+    var prompt="Génère un email de relance professionnel pour un acheteur immobilier.\nPrénom:"+(lead.prenom||"")+" | Nom:"+(lead.nom||"")+" | Ville:"+(lead.ville||"")+" | Bien:"+(lead.bien||"")+
+    "\nContexte: Suite à un premier message WhatsApp envoyé, pas encore de réponse. Relance douce J+1."+
+    (consignes?"\nConsignes: "+consignes:"")+
+    (instr?"\nInstructions supplémentaires: "+instr:"")+
+    (signature?"\nSignature à utiliser: "+signature:"\nTermine par Bien cordialement, [Votre nom]")+
+    "\nFormat: Objet de l'email sur la première ligne commençant par 'Objet:', puis le corps de l'email. Professionnel, chaleureux, max 5 lignes.";
+
+    var genBtn2=null;
+    gText(prompt,state.apiKey,function(err,txt){
+      mod.removeChild(loading);
+      var emailTxt=txt||("Objet: Votre recherche "+(lead.bien||"immobilière")+"\n\nBonjour "+(lead.prenom||"")+"\n\nJe me permets de revenir vers vous suite à votre demande concernant "+(lead.bien||"votre recherche")+(lead.ville?" à "+lead.ville:"")+". Êtes-vous toujours en recherche active ?\n\n"+(signature||"Bien cordialement,\n[Votre nom]"));
+
+      // Split objet / corps
+      var lines=emailTxt.split("\n");
+      var objetLine=lines[0].replace(/^Objet:\s*/i,"").trim();
+      var corps=lines.slice(1).join("\n").trim();
+
+      mod.appendChild(el("div",{class:"label",style:"margin-bottom:6px"},"Objet"));
+      var objetInp=el("input",{type:"text"});objetInp.value=objetLine;
+      objetInp.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:14px;box-sizing:border-box;margin-bottom:14px";
+      mod.appendChild(objetInp);
+
+      mod.appendChild(el("div",{class:"label",style:"margin-bottom:6px"},"Corps de l'email"));
+      var corpsTA=el("textarea",{rows:"8"});corpsTA.value=corps;
+      corpsTA.style.cssText="width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:14px;resize:vertical;box-sizing:border-box;margin-bottom:14px";
+      mod.appendChild(corpsTA);
+
+      var btnRow=el("div",{style:"display:flex;gap:10px;margin-bottom:10px"});
+      genBtn2=el("button",{class:"btn btn-ghost btn-full"});genBtn2.textContent="↺ Régénérer";
+      genBtn2.onclick=function(){
+        var instr2=instrTA.value.trim();
+        corpsTA.value="⏳…";genBtn2.disabled=true;
+        var p2=prompt+(instr2?"\nInstructions supplémentaires: "+instr2:"");
+        gText(p2,state.apiKey,function(e,t){
+          if(t){var l2=t.split("\n");objetInp.value=l2[0].replace(/^Objet:\s*/i,"").trim();corpsTA.value=l2.slice(1).join("\n").trim();}
+          genBtn2.disabled=false;
+        });
+      };
+
+      var sendBtn=el("button",{class:"btn btn-primary btn-full"});sendBtn.textContent="📧 Ouvrir dans ma messagerie";
+      sendBtn.onclick=function(){
+        var to=lead.email||"";
+        var subj=encodeURIComponent(objetInp.value);
+        var body=encodeURIComponent(corpsTA.value);
+        window.open("mailto:"+to+"?subject="+subj+"&body="+body,"_blank");
+        sendBtn.textContent="✓ Messagerie ouverte";
+
+        // Log in history
+        var upd=state.leads.map(function(l){
+          if(l.id!==lead.id)return l;
+          return Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email de relance préparé"}])});
+        });
+        setState({leads:upd});
+      };
+
+      btnRow.appendChild(genBtn2);btnRow.appendChild(sendBtn);mod.appendChild(btnRow);
+
+      if(!lead.email){
+        var noEmail=el("div",{style:"font-size:12px;color:#F59E0B;text-align:center"});
+        noEmail.textContent="⚠ Pas d'email enregistré pour ce lead — ajoute-le dans la fiche";
+        mod.appendChild(noEmail);
+      }
+    });
+  }
+
+  genEmail("");
+}
+
+// ── Réglages Modal (consignes + signature) ───────────────────────────────────
+function openConsignes(){
+  var bg=el("div",{class:"modal-bg"});
+  var mod=el("div",{class:"modal",style:"max-width:480px"});
+  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"});
+  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"⚙ Réglages"));
+  var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
+  cx.onclick=function(){document.body.removeChild(bg)};
+  hdr.appendChild(cx);mod.appendChild(hdr);
+
+  // Signature
+  mod.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Ma signature"));
+  var sigInfo=el("div",{style:"font-size:12px;color:#475569;margin-bottom:8px"});
+  sigInfo.textContent="Ajoutée automatiquement à la fin de chaque message WA et email";
+  mod.appendChild(sigInfo);
+  var sigTA=el("textarea",{rows:"3",placeholder:"Ex: Julien Martin - Agent immobilier\n06 12 34 56 78\njulien@agence.fr"});
+  sigTA.value=loadSignature();
+  sigTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:16px";
+  mod.appendChild(sigTA);
+
+  // Séparateur
+  mod.appendChild(el("div",{style:"border-top:1px solid #2A2F42;margin-bottom:16px"}));
+
+  // Consignes
+  mod.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Consignes permanentes"));
+  var consInfo=el("div",{style:"font-size:12px;color:#475569;margin-bottom:8px"});
+  consInfo.textContent="Intégrées à chaque message généré. Ex: Mentionne ta dispo le weekend. Reste concis.";
+  mod.appendChild(consInfo);
+  var consTA=el("textarea",{rows:"4",placeholder:"Tes consignes permanentes…"});
+  consTA.value=loadConsignes();
+  consTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:14px";
+  mod.appendChild(consTA);
 
   var row=el("div",{style:"display:flex;gap:10px"});
-  var clearBtn=el("button",{class:"btn btn-ghost btn-full"});clearBtn.textContent="🗑 Effacer";
-  clearBtn.onclick=function(){ta.value="";saveConsignes("");clearBtn.textContent="✓ Effacé"};
+  var clearBtn=el("button",{class:"btn btn-ghost btn-full"});clearBtn.textContent="🗑 Tout effacer";
+  clearBtn.onclick=function(){sigTA.value="";consTA.value="";saveSignature("");saveConsignes("");clearBtn.textContent="✓ Effacé"};
   var saveBtn=el("button",{class:"btn btn-success btn-full"});saveBtn.textContent="✓ Sauvegarder";
   saveBtn.onclick=function(){
-    saveConsignes(ta.value.trim());
+    saveSignature(sigTA.value.trim());
+    saveConsignes(consTA.value.trim());
     saveBtn.textContent="✓ Sauvegardé !";
     setTimeout(function(){document.body.removeChild(bg)},800);
   };
