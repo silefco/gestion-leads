@@ -334,33 +334,23 @@ function openWA(lead){
   cx.onclick=function(){document.body.removeChild(bg)};
   hdr.appendChild(cx);mod.appendChild(hdr);
 
-  // Context selector
-  var ctxDiv=el("div",{style:"margin-bottom:16px"});
-  ctxDiv.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Contexte du message"));
-  var ctxRow=el("div",{style:"display:flex;gap:8px;flex-wrap:wrap"});
-  var ctxs=[{id:"nouveau",label:"🆕 Premier contact"},{id:"relance",label:"🔄 Relance"},{id:"echange",label:"💬 En échange"},{id:"apres_rdv",label:"🤝 Après RDV"}];
-  var currentCtx=lead._contexteWA||"nouveau";
-  ctxs.forEach(function(c){
-    var b=el("button",{class:"ctx-btn"+(currentCtx===c.id?" active":"")});b.textContent=c.label;
-    b.onclick=function(){
-      currentCtx=c.id;
-      ctxRow.querySelectorAll(".ctx-btn").forEach(function(x){x.className="ctx-btn"});
-      b.className="ctx-btn active";
-      // Update lead context for regeneration
-      lead._contexteWA=c.id;
-    };
-    ctxRow.appendChild(b);
-  });
-  ctxDiv.appendChild(ctxRow);
+  // Instructions libres + consignes
+  var instrDiv=el("div",{style:"margin-bottom:16px"});
+  instrDiv.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Instructions pour ce message (optionnel)"));
+  var instrHint=el("div",{style:"font-size:12px;color:#475569;margin-bottom:8px"});
+  instrHint.textContent="Ex: Rends le message plus court · Ajoute que je suis dispo samedi · Sois plus direct · Parle du prix";
+  var instrTA=el("textarea",{rows:"2",placeholder:"Tape tes instructions ici avant de régénérer…"});
+  instrTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box";
+  instrDiv.appendChild(instrHint);instrDiv.appendChild(instrTA);
 
-  // Show consignes if set
+  // Show saved consignes
   var cons=loadConsignes();
   if(cons){
-    var consDiv=el("div",{style:"padding:8px 12px;background:#1E2333;border-radius:8px;border-left:3px solid #3B82F6;margin-top:10px;font-size:12px;color:#94A3B8"});
-    consDiv.innerHTML="📋 <strong style='color:#60A5FA'>Tes consignes :</strong> "+cons.substring(0,100)+(cons.length>100?"…":"");
-    ctxDiv.appendChild(consDiv);
+    var consDiv=el("div",{style:"padding:8px 12px;background:#1E2333;border-radius:8px;border-left:3px solid #3B82F6;margin-top:8px;font-size:12px;color:#94A3B8"});
+    consDiv.innerHTML="📋 <strong style='color:#60A5FA'>Consignes sauvegardées actives</strong>";
+    instrDiv.appendChild(consDiv);
   }
-  mod.appendChild(ctxDiv);
+  mod.appendChild(instrDiv);
   var ld=el("div",{style:"text-align:center;padding:40px 0;color:#94A3B8"});
   ld.innerHTML="<div style='font-size:28px;margin-bottom:12px'>⏳</div>Génération du message…";
   mod.appendChild(ld);bg.appendChild(mod);document.body.appendChild(bg);
@@ -391,7 +381,12 @@ function openWA(lead){
     var sb=el("button",{class:"btn btn-success btn-full"});sb.textContent="✓ Oui, envoyé";
     cr.appendChild(rop);cr.appendChild(sb);cd.appendChild(wn);cd.appendChild(cr);mod.appendChild(cd);
 
-    rb.onclick=function(){ta.value="⏳…";rb.disabled=true;gText(prompt,state.apiKey,function(e,t){ta.value=t||msg;rb.disabled=false})};
+    rb.onclick=function(){
+    var instr=instrTA.value.trim();
+    var newPrompt=prompt+(instr?"\n\nInstructions supplémentaires pour cette version : "+instr:"");
+    ta.value="⏳ Génération…";rb.disabled=true;
+    gText(newPrompt,state.apiKey,function(e,t){ta.value=t||msg;rb.disabled=false});
+  };
 
     function doOpen(){
       // Trace ouverture WA dans historique
