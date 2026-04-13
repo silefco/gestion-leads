@@ -152,7 +152,7 @@ function gVision(b64,mime,key,cb){
   var p="Tu es expert en captures d'écran immobilières (emails LeBonCoin, SeLoger, PAP, etc.).\nLis TOUT le texte visible et extrais les infos acheteur.\nRéponds UNIQUEMENT avec ce JSON (rien d'autre) :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\nplateforme: leboncoin=LeBonCoin seloger=SeLoger pap=PAP bienici=Bien\'ici sinon=Autre\nChamp absent = vide.";
   fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
     headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-    body:JSON.stringify({model:"llama-3.2-90b-vision-preview",messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mime+";base64,"+b64}},{type:"text",text:p}]}],max_tokens:800,temperature:0.1})
+    body:JSON.stringify({model:"meta-llama/llama-4-scout-17b-16e-instruct",messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mime+";base64,"+b64}},{type:"text",text:p}]}],max_tokens:800,temperature:0.1})
   }).then(function(r){return r.json()}).then(function(d){
     if(d.error){cb(typeof d.error==="string"?d.error:d.error.message||JSON.stringify(d.error),null);return}
     var txt=((d.choices||[])[0]||{message:{content:""}}).message.content||"";
