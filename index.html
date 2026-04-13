@@ -217,13 +217,13 @@ function renderNouveau(){
   var rightCol=el("div");
   root.appendChild(layout);
 
-  var imgPrev=el("img",{style:"max-height:340px;max-width:100%;border-radius:8px;display:none;margin:0 auto 8px"});
+  var imgPrev=el("img",{style:"width:100%;max-height:500px;object-fit:contain;border-radius:8px;display:none;margin:0 auto 8px"});
   var hint=el("div");hint.innerHTML="<div style='font-size:38px;margin-bottom:8px'>📷</div><div style='font-size:15px;font-weight:700;color:#F1F5F9;margin-bottom:6px'>Ajouter une photo / capture</div><div style='font-size:12px;color:#94A3B8'>Appuyer pour sélectionner</div>";
   var chgHint=el("div",{style:"font-size:12px;color:#60A5FA;display:none"},"📷 Appuyer pour changer");
   var fi=el("input",{type:"file",accept:"image/*",style:"display:none"});
   var uz=el("label",{class:"upload-zone"});
   uz.appendChild(imgPrev);uz.appendChild(hint);uz.appendChild(chgHint);uz.appendChild(fi);
-  root.appendChild(uz);
+  leftCol.appendChild(uz);
 
   fi.onchange=function(e){
     var file=e.target.files[0];if(!file)return;
@@ -293,7 +293,7 @@ function renderNouveau(){
     var lead={id:genId(),dateEntree:today(),prenom:pi.value,nom:ni.value,telephone:ti.value,email:ei.value,ville:vi.value,bien:bi.value,plateforme:pli.value,messageBrut:mta.value,priorite:pri.value||"Normale",commentaire:cta.value,statut:"Nouveau",lienPhoto:imgData,historique:[{date:new Date().toISOString(),action:"Lead créé"},{date:new Date().toISOString(),action:"Données validées"}],relances:[],messageEnvoye:false,contactCree:false};
     setState({leads:[lead].concat(state.leads),selectedId:lead.id,view:"fiche"});
   };
-  sep.appendChild(vBtn);fDiv.appendChild(sep);root.appendChild(fDiv);
+  sep.appendChild(vBtn);fDiv.appendChild(sep);rightCol.appendChild(fDiv);
 
   function fillF(data){
     if(data.prenom){pi.value=data.prenom;f.prenom=data.prenom}
@@ -499,6 +499,26 @@ function renderFiche(lead){
   root.appendChild(hc);
 
   // Actions
+  // VCF contact button - available from the start
+  var vcfTopBtn=el("button",{class:"btn btn-outline btn-full",style:"margin-bottom:10px"});
+  vcfTopBtn.innerHTML="👤 Enregistrer le contact"+(lead.contactCree?" <span style='color:#10B981;font-size:11px'>✓ déjà créé</span>":"");
+  vcfTopBtn.onclick=function(){
+    var nom=[lead.prenom,lead.nom].filter(Boolean).join(" ")||"Sans nom";
+    var vcf="BEGIN:VCARD\nVERSION:3.0\nFN:"+nom+"\nTEL:"+(lead.telephone||"")+(lead.email?"\nEMAIL:"+lead.email:"")+(lead.ville?"\nADR:;;;"+lead.ville+";;;":"")+
+    "\nNOTE:Lead "+(lead.plateforme||"")+" - "+fmtDate(lead.dateEntree)+"\nEND:VCARD";
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([vcf],{type:"text/vcard"}));
+    a.download=(nom.replace(/ /g,"_"))+".vcf";a.click();
+    vcfTopBtn.innerHTML="✓ Contact téléchargé — ouvre le fichier .vcf pour l'enregistrer";
+    vcfTopBtn.style.color="#10B981";vcfTopBtn.style.borderColor="#10B981";
+    // Mark contact as created
+    if(!lead.contactCree){
+      var upd=state.leads.map(function(l){return l.id===lead.id?Object.assign({},l,{contactCree:true,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Contact créé (fichier .vcf téléchargé)"}])})  :l});
+      setState({leads:upd,selectedId:lead.id});
+    }
+  };
+  root.appendChild(vcfTopBtn);
+
   var ag=el("div",{style:"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"});
   var waB=el("button",{class:"btn btn-wa"});waB.textContent="💬 WhatsApp";waB.onclick=function(){openWA(lead)};
   var stB=el("button",{class:"btn btn-outline"});stB.textContent="⇄ Statut";
