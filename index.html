@@ -15,12 +15,13 @@ input,select,textarea,button{font-family:inherit;font-size:14px}
 input,select,textarea{width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;outline:none;box-sizing:border-box;-webkit-appearance:none}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 textarea{resize:vertical}
-.btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;font-weight:700;cursor:pointer;border:none;font-size:14px;transition:opacity 0.15s}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 20px;border-radius:8px;font-weight:700;cursor:pointer;border:none;font-size:14px;transition:opacity 0.15s;gap:6px}
 .btn:active{opacity:0.8}
 .btn-primary{background:#3B82F6;color:#fff}
 .btn-success{background:#10B981;color:#fff}
 .btn-ghost{background:transparent;color:#94A3B8;border:1px solid #2A2F42}
 .btn-outline{background:transparent;color:#3B82F6;border:1px solid #3B82F6}
+.btn-warning{background:#F59E0B;color:#fff}
 .btn-wa{background:#25D366;color:#fff}
 .btn-full{width:100%}
 .btn-sm{padding:6px 14px;font-size:12px}
@@ -47,6 +48,7 @@ textarea{resize:vertical}
 .err-box{padding:12px 14px;background:#450A0A;border-radius:8px;border-left:3px solid #EF4444;margin-bottom:14px}
 .ok-box{padding:12px 14px;background:#064E3B;border-radius:8px;border-left:3px solid #10B981;margin-bottom:14px;font-size:13px;color:#10B981}
 .warn-box{padding:12px 14px;background:#451A03;border-radius:8px;border-left:3px solid #F59E0B;margin-bottom:14px;font-size:13px;color:#F59E0B}
+.info-box{padding:12px 14px;background:#1D3557;border-radius:8px;border-left:3px solid #3B82F6;margin-bottom:14px;font-size:13px;color:#60A5FA}
 .hist-dot{width:6px;height:6px;border-radius:50%;background:#3B82F6;margin-top:6px;flex-shrink:0}
 .section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px}
 .back-btn{background:none;border:none;color:#94A3B8;cursor:pointer;font-size:13px;margin-bottom:14px;display:flex;align-items:center;gap:6px;padding:0}
@@ -55,13 +57,20 @@ textarea{resize:vertical}
 .stat-num{font-size:30px;font-weight:900;line-height:1}
 .stat-label{font-size:11px;color:#94A3B8;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
 .notif-bar{background:#1D3557;border:1px solid #3B82F6;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-@media(min-width:640px){
-  .nouveau-layout{display:grid !important;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
-  .nouveau-left{position:sticky;top:80px;max-height:calc(100vh - 100px);overflow-y:auto}
-  .nouveau-layout .upload-zone{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-}
-.ctx-btn{padding:6px 12px;border-radius:20px;cursor:pointer;font-weight:600;font-size:12px;border:1px solid #2A2F42;background:#0F1117;color:#94A3B8;transition:all 0.15s}
-.ctx-btn.active{background:#1D3557;color:#3B82F6;border-color:#3B82F6}
+.score-stars{display:inline-flex;gap:2px}
+.pipeline-bar{display:flex;gap:3px;margin:12px 0}
+.pipeline-step{flex:1;height:4px;border-radius:2px;background:#2A2F42}
+.pipeline-step.done{background:#10B981}
+.pipeline-step.current{background:#3B82F6}
+.tab-bar{display:flex;gap:0;background:#1E2333;border-radius:10px;padding:4px;margin-bottom:16px}
+.tab-btn{flex:1;padding:8px;border:none;background:transparent;color:#94A3B8;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.15s}
+.tab-btn.active{background:#0F1117;color:#F1F5F9}
+.dormant-card{background:#1E2333;border:1px solid #2A2F42;border-radius:10px;padding:14px;margin-bottom:8px;border-left:3px solid #6B7280}
+
+.progress-steps{display:flex;margin:10px 0 14px}
+.step{flex:1;text-align:center;font-size:9px;font-weight:700;padding:5px 2px;border-top:3px solid #2A2F42;color:#475569;text-transform:uppercase;letter-spacing:0.03em}
+.step.done{border-top-color:#10B981;color:#10B981}
+.step.current{border-top-color:#3B82F6;color:#3B82F6}
 </style>
 </head>
 <body>
@@ -72,7 +81,20 @@ function genId(){return"L"+Date.now().toString(36).toUpperCase()}
 function today(){return new Date().toISOString().split("T")[0]}
 function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().split("T")[0]}
 function fmtDate(d){if(!d)return"—";return new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})}
+function daysAgo(d){if(!d)return 0;var diff=new Date()-new Date(d+"T12:00:00");return Math.floor(diff/86400000)}
 function isToday(d){return d===today()}
+function daysSince(d){if(!d)return 0;return Math.floor((new Date()-new Date(d+"T12:00:00"))/(1000*60*60*24))}
+function hoursSince(isoStr){if(!isoStr)return 999;return Math.floor((new Date()-new Date(isoStr))/(1000*60*60))}
+function responseIndicator(lead){
+  if(lead.messageEnvoye)return null;
+  var skipStatuts=["Message envoyé","En échange","RDV proposé","Visite prévue"];
+  if(skipStatuts.indexOf(lead.statut)>=0)return null;
+  var h=hoursSince(lead.createdAt);
+  var color=h<2?"#10B981":h<24?"#F59E0B":"#EF4444";
+  var label=h<1?"<1h":h<24?h+"h":Math.floor(h/24)+"j";
+  var dot=h<2?"🟢":h<24?"🟡":"🔴";
+  return el("span",{style:"font-size:10px;font-weight:700;color:"+color+";white-space:nowrap;margin-left:2px"},dot+" "+label);
+}
 function isPast(d){return d&&d<today()}
 function qs(s){return document.querySelector(s)}
 function el(tag,props,children){
@@ -94,31 +116,51 @@ function el(tag,props,children){
 // ── Storage ───────────────────────────────────────────────────────────────────
 function getKey(){return localStorage.getItem("gl_key")||""}
 function saveKey(k){localStorage.setItem("gl_key",k)}
+function getGmailScript(){return localStorage.getItem("gl_gmail_script")||""}
+function saveGmailScript(u){localStorage.setItem("gl_gmail_script",u)}
 function loadLeads(){try{return JSON.parse(localStorage.getItem("gl_v1")||"[]")}catch(e){return[]}}
 function saveLeads(l){localStorage.setItem("gl_v1",JSON.stringify(l))}
-function loadConsignes(){return localStorage.getItem("gl_consignes")||""}
-function saveConsignes(c){localStorage.setItem("gl_consignes",c)}
-function loadSignature(){return localStorage.getItem("gl_signature")||""}
-function saveSignature(s){localStorage.setItem("gl_signature",s)}
+function loadDormants(){try{return JSON.parse(localStorage.getItem("gl_dormants")||"[]")}catch(e){return[]}}
+function saveDormants(d){localStorage.setItem("gl_dormants",JSON.stringify(d))}
+function loadTemplates(){
+  try{return JSON.parse(localStorage.getItem("gl_templates")||"null")}catch(e){return null}
+}
+function saveTemplates(t){localStorage.setItem("gl_templates",JSON.stringify(t))}
+function getLastEmailDate(){return localStorage.getItem("gl_last_email")||""}
+function saveLastEmailDate(d){localStorage.setItem("gl_last_email",d)}
 
 // ── State ─────────────────────────────────────────────────────────────────────
-var state={leads:loadLeads(),view:"relances",selectedId:null,apiKey:getKey()};
+var state={
+  leads:loadLeads(),
+  dormants:loadDormants(),
+  view:"relances",
+  selectedId:null,
+  selectedDormantId:null,
+  apiKey:getKey(),
+  gmailScript:getGmailScript(),
+  templates:loadTemplates()||getDefaultTemplates()
+};
 function setState(patch){
   Object.assign(state,typeof patch==="function"?patch(state):patch);
-  saveLeads(state.leads);render();
+  saveLeads(state.leads);
+  saveDormants(state.dormants);
+  if(state.templates)saveTemplates(state.templates);
+  render();
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
 var ST={
-  "Nouveau":{color:"#3B82F6",bg:"#1D3557",icon:"✦"},
-  "Message envoyé":{color:"#10B981",bg:"#064E3B",icon:"✉"},
-  "En échange":{color:"#06B6D4",bg:"#0C4A6E",icon:"↔"},
-  "RDV proposé":{color:"#F59E0B",bg:"#451A03",icon:"◈"},
-  "Visite prévue":{color:"#8B5CF6",bg:"#2E1065",icon:"⌂"},
-  "Sans réponse":{color:"#6B7280",bg:"#1F2937",icon:"◌"},
-  "Perdu":{color:"#EF4444",bg:"#450A0A",icon:"✕"}
+  "Nouveau":{color:"#3B82F6",bg:"#1D3557",icon:"✦",step:0},
+  "Message envoyé":{color:"#10B981",bg:"#064E3B",icon:"✉",step:1},
+  "En échange":{color:"#06B6D4",bg:"#0C4A6E",icon:"↔",step:2},
+  "RDV proposé":{color:"#F59E0B",bg:"#451A03",icon:"◈",step:3},
+  "Visite prévue":{color:"#8B5CF6",bg:"#2E1065",icon:"⌂",step:4},
+  "Sans réponse":{color:"#6B7280",bg:"#1F2937",icon:"◌",step:1},
+  "Perdu":{color:"#EF4444",bg:"#450A0A",icon:"✕",step:0}
 };
+var PIPELINE_STEPS=["Nouveau","Message envoyé","En échange","RDV proposé","Visite prévue"];
 var PR={"Haute":{color:"#EF4444",label:"↑ Haute"},"Normale":{color:"#3B82F6",label:"→ Normale"},"Basse":{color:"#94A3B8",label:"↓ Basse"}};
+var STEP_ORDER=["Nouveau","Message envoyé","En échange","RDV proposé","Visite prévue"];
 var PLATS=["","SeLoger","LeBonCoin","PAP","Bien'ici","Logic-Immo","WhatsApp","Email","Autre"];
 
 function stag(s,sm){
@@ -128,15 +170,64 @@ function stag(s,sm){
   return t;
 }
 
+// ── Scoring ───────────────────────────────────────────────────────────────────
+function calcScore(lead){
+  var score=0;
+  if(lead.prenom||lead.nom)score++;
+  if(lead.telephone)score++;
+  if(lead.email)score++;
+  if(lead.ville)score++;
+  if(lead.bien)score++;
+  // Bonus plateforme qualitative
+  if(["SeLoger","PAP","Bien'ici"].includes(lead.plateforme))score=Math.min(5,score+0.5);
+  // Malus ancienneté
+  var age=daysAgo(lead.dateEntree);
+  if(age>7)score=Math.max(1,score-1);
+  if(age>14)score=Math.max(1,score-1);
+  return Math.min(5,Math.round(score));
+}
+
+function scoreStars(score,small){
+  var d=el("div",{class:"score-stars"});
+  for(var i=1;i<=5;i++){
+    var s=el("span",{style:"font-size:"+(small?"10":"13")+"px;color:"+(i<=score?"#F59E0B":"#2A2F42")});
+    s.textContent="★";d.appendChild(s);
+  }
+  return d;
+}
+
+// ── Templates par défaut ──────────────────────────────────────────────────────
+function getDefaultTemplates(){
+  return {
+    premier_contact:"Bonjour {prenom},\n\nMerci pour votre message concernant {bien}{ville}. Je serais ravi(e) d'échanger avec vous sur votre projet d'achat.\n\nPouvez-vous me préciser votre budget et vos critères essentiels ?\n\nBien cordialement,\n[Votre nom]",
+    relance_j1:"Bonjour {prenom},\n\nJe me permets de revenir vers vous suite à votre demande concernant {bien}{ville}. Avez-vous eu l'occasion de consulter les biens disponibles dans ce secteur ?\n\nJe reste disponible pour vous accompagner.\n\nBien cordialement,\n[Votre nom]",
+    relance_j3:"Bonjour {prenom},\n\nToujours à votre disposition concernant votre recherche{bien}{ville}. Le marché évolue vite en ce moment — j'ai quelques biens intéressants à vous présenter.\n\nN'hésitez pas à me contacter.\n\nBien cordialement,\n[Votre nom]",
+    relance_j7:"Bonjour {prenom},\n\nJe souhaitais m'assurer que votre projet d'acquisition{bien}{ville} est toujours d'actualité. Si vos critères ont évolué, je peux adapter mes recherches.\n\nBien cordialement,\n[Votre nom]",
+    rattrapage:"Bonjour {prenom},\n\nNous avions échangé il y a quelque temps concernant {bien}{ville}. Votre projet est-il toujours en cours ? De nouveaux biens correspondant à vos critères viennent de se libérer.\n\nBien cordialement,\n[Votre nom]",
+    visite:"Bonjour {prenom},\n\nSuite à nos échanges concernant {bien}{ville}, je vous propose de visiter un bien qui correspond parfaitement à vos critères.\n\nQuelles sont vos disponibilités cette semaine ?\n\nBien cordialement,\n[Votre nom]"
+  };
+}
+
+function applyTemplate(tpl,lead){
+  var ville=lead.ville?" à "+lead.ville:"";
+  var bien=lead.bien?" pour "+lead.bien:"";
+  return tpl
+    .replace(/{prenom}/g,lead.prenom||"")
+    .replace(/{nom}/g,lead.nom||"")
+    .replace(/{bien}/g,bien)
+    .replace(/{ville}/g,ville)
+    .replace(/{plateforme}/g,lead.plateforme||"");
+}
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 function askNotif(cb){
-  if(!("Notification" in window)){if(cb)cb(false);return}
+  if(!("Notification"in window)){if(cb)cb(false);return}
   if(Notification.permission==="granted"){if(cb)cb(true);return}
   if(Notification.permission==="denied"){if(cb)cb(false);return}
   Notification.requestPermission().then(function(p){if(cb)cb(p==="granted")});
 }
 function fireNotif(){
-  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  if(!("Notification"in window)||Notification.permission!=="granted")return;
   var last=localStorage.getItem("gl_notif_date");
   if(last===today())return;
   localStorage.setItem("gl_notif_date",today());
@@ -149,32 +240,97 @@ function fireNotif(){
 }
 
 // ── Gemini ────────────────────────────────────────────────────────────────────
-var GURL=function(k){return"https://api.groq.com/openai/v1/chat/completions"};
+var GURL=function(k){return"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+k};
 function gText(txt,key,cb){
-  fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-    body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"user",content:txt}],max_tokens:400,temperature:0.7})
+  fetch(GURL(key),{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:txt}]}],generationConfig:{temperature:0.7,maxOutputTokens:500}})
   }).then(function(r){return r.json()}).then(function(d){
-    if(d.error){cb(typeof d.error==="string"?d.error:(d.error.message||JSON.stringify(d.error)),"");return}
-    cb(null,((d.choices||[])[0]||{message:{content:""}}).message.content.trim()||"");
+    if(d.error){cb(d.error.message,"");return}
+    cb(null,((d.candidates||[])[0]||{content:{parts:[{text:""}]}}).content.parts.map(function(p){return p.text||""}).join("").trim());
   }).catch(function(e){cb(e.message,"")});
 }
 function gVision(b64,mime,key,cb){
-  var p="Tu es expert en captures d'écran immobilières (emails LeBonCoin, SeLoger, PAP, etc.).\nLis TOUT le texte visible et extrais les infos acheteur.\nRéponds UNIQUEMENT avec ce JSON (rien d'autre) :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\nplateforme: leboncoin=LeBonCoin seloger=SeLoger pap=PAP bienici=Bien\'ici sinon=Autre\nChamp absent = vide.";
-  fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
-    headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-    body:JSON.stringify({model:"meta-llama/llama-4-scout-17b-16e-instruct",messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mime+";base64,"+b64}},{type:"text",text:p}]}],max_tokens:800,temperature:0.1})
+  var p="Tu es expert en captures d'écran immobilières.\nLis TOUT le texte visible et extrais les infos de l'acheteur.\nRéponds UNIQUEMENT avec ce JSON (rien d'autre) :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\n- prenom/nom : cherche De:, From:, Nom: ou corps. Incertain = tout dans nom.\n- telephone : tout numéro (+33, 06, 07)\n- email : toute adresse email\n- ville : ville ou secteur\n- bien : type de bien (souvent dans l'objet)\n- plateforme : leboncoin.fr=LeBonCoin seloger.com=SeLoger pap.fr=PAP bienici.com=Bien'ici sinon=Autre\n- messageBrut : texte complet\nChamp absent = vide.";
+  fetch(GURL(key),{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:mime,data:b64}},{text:p}]}],generationConfig:{temperature:0.1,maxOutputTokens:800}})
   }).then(function(r){return r.json()}).then(function(d){
-    if(d.error){cb(typeof d.error==="string"?d.error:d.error.message||JSON.stringify(d.error),null);return}
-    var txt=((d.choices||[])[0]||{message:{content:""}}).message.content||"";
+    if(d.error){cb(d.error.message,null);return}
+    var txt=((d.candidates||[])[0]||{content:{parts:[{text:""}]}}).content.parts.map(function(p){return p.text||""}).join("");
     var m=txt.match(/\{[\s\S]*\}/);
     if(!m){cb("Pas de JSON",null);return}
     try{cb(null,JSON.parse(m[0]))}catch(e){cb("JSON invalide",null)}
   }).catch(function(e){cb(e.message,null)});
 }
 
+// ── Gmail via Apps Script ─────────────────────────────────────────────────────
+function fetchGmailLeads(scriptUrl,cb){
+  var lastDate=getLastEmailDate();
+  var url=scriptUrl+(scriptUrl.includes("?")?"&":"?")+"after="+(lastDate||"");
+  fetch(url).then(function(r){return r.json()}).then(function(data){
+    cb(null,data.emails||[]);
+  }).catch(function(e){cb(e.message,[])});
+}
+
+function processGmailEmails(emails,cb){
+  if(!emails.length){cb(0,0);return}
+  var created=0,duplicates=0,idx=0;
+  var results=[];
+
+  function processNext(){
+    if(idx>=emails.length){
+      // Mettre à jour la date du dernier email traité
+      if(emails.length>0)saveLastEmailDate(emails[0].date||today());
+      cb(created,duplicates,results);
+      return;
+    }
+    var email=emails[idx++];
+    var prompt="Tu es expert en emails immobiliers.\nVoici un email reçu d'un acheteur potentiel.\nExtrais les informations et réponds UNIQUEMENT avec ce JSON :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\nContenu de l'email :\nObjet: "+(email.subject||"")+"\\nDe: "+(email.from||"")+"\\n"+(email.body||"");
+    gText(prompt,state.apiKey,function(err,res){
+      var m=res&&res.match(/\{[\s\S]*\}/);
+      if(!err&&m){
+        try{
+          var data=JSON.parse(m[0]);
+          // Vérif doublon
+          var doublon=findDoublon(data.telephone);
+          if(doublon){
+            duplicates++;
+            results.push({type:"doublon",email:email,existing:doublon});
+          }else{
+            var lead=createLeadFromData(data,null,"Email Gmail");
+            state.leads=[lead].concat(state.leads);
+            created++;
+            results.push({type:"created",lead:lead});
+          }
+        }catch(e){}
+      }
+      processNext();
+    });
+  }
+  processNext();
+}
+
+function createLeadFromData(data,imgData,source){
+  return {
+    id:genId(),dateEntree:today(),
+    prenom:data.prenom||"",nom:data.nom||"",telephone:data.telephone||"",
+    email:data.email||"",ville:data.ville||"",bien:data.bien||"",
+    plateforme:data.plateforme||source||"",messageBrut:data.messageBrut||"",
+    priorite:"Normale",commentaire:"",statut:"Nouveau",lienPhoto:imgData,
+    historique:[{date:new Date().toISOString(),action:"Lead créé via "+( source||"import")}],
+    relances:[],messageEnvoye:false,contactCree:false,archived:false
+  };
+}
+
+// ── Doublon ───────────────────────────────────────────────────────────────────
+function findDoublon(tel){
+  if(!tel||tel.trim()==="")return null;
+  var c=tel.replace(/\D/g,"");if(c.length<6)return null;
+  return state.leads.find(function(l){return l.telephone&&l.telephone.replace(/\D/g,"")===c})||null;
+}
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
 function renderSetup(){
-  var ki=el("input",{type:"text",placeholder:"gsk_...",style:"margin-bottom:12px"});
+  var ki=el("input",{type:"text",placeholder:"AIza...",style:"margin-bottom:12px"});
   var ed=el("div",{style:"display:none;padding:10px;background:#450A0A;border-radius:8px;color:#EF4444;font-size:13px;margin-bottom:12px"});
   var btn=el("button",{class:"btn btn-success btn-full"});btn.textContent="✓ Démarrer";
   btn.onclick=function(){
@@ -189,18 +345,11 @@ function renderSetup(){
   var box=el("div",{style:"background:#181C27;border:1px solid #2A2F42;border-radius:12px;padding:20px"});
   box.appendChild(el("div",{class:"label"},"Clé API Gemini"));
   box.appendChild(ki);box.appendChild(ed);box.appendChild(btn);
-  box.appendChild(el("p",{style:"margin-top:14px;font-size:12px;color:#475569;text-align:center"},"Clé gratuite sur console.groq.com"));
+  box.appendChild(el("p",{style:"margin-top:14px;font-size:12px;color:#475569;text-align:center"},"Clé gratuite sur aistudio.google.com"));
   var wrap=el("div",{class:"setup-screen"});
   var inner=el("div",{style:"width:100%;max-width:400px"});
   inner.innerHTML="<div style='text-align:center;margin-bottom:28px'><div style='font-size:48px;margin-bottom:12px'>🔑</div><div style='font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:8px'>Gestion Leads</div><div style='font-size:14px;color:#94A3B8;line-height:1.6'>Entre ta clé API Gemini pour démarrer.<br/>Sauvegardée sur cet appareil uniquement.</div></div>";
   inner.appendChild(box);wrap.appendChild(inner);return wrap;
-}
-
-// ── Doublon ───────────────────────────────────────────────────────────────────
-function findDoublon(tel){
-  if(!tel||tel.trim()==="")return null;
-  var c=tel.replace(/\D/g,"");if(c.length<6)return null;
-  return state.leads.find(function(l){return l.telephone&&l.telephone.replace(/\D/g,"")===c})||null;
 }
 
 // ── Nouveau Lead ──────────────────────────────────────────────────────────────
@@ -209,22 +358,25 @@ function renderNouveau(){
   var f={prenom:"",nom:"",telephone:"",email:"",ville:"",bien:"",plateforme:"",messageBrut:"",priorite:"Normale",commentaire:""};
   var root=el("div");
   root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:4px"},"Nouveau lead"));
-  root.appendChild(el("div",{style:"font-size:13px;color:#94A3B8;margin-bottom:20px"},"Photo → Analyse IA → Validation"));
+  root.appendChild(el("div",{style:"font-size:13px;color:#94A3B8;margin-bottom:16px"},"Choisir la source d'entrée"));
 
-  // PC 2-col wrapper
-  var layout=el("div",{class:"nouveau-layout"});
-  var leftCol=el("div",{class:"nouveau-left"});
-  var rightCol=el("div");
-  root.appendChild(layout);
+  // Onglets source
+  var tabs=el("div",{class:"tab-bar",style:"margin-bottom:16px"});
+  var tabPhoto=el("button",{class:"tab-btn active"});tabPhoto.textContent="📷 Photo";
+  var tabEmail=el("button",{class:"tab-btn"});tabEmail.textContent="✉ Email texte";
+  var tabGmail=el("button",{class:"tab-btn"});tabGmail.textContent="📥 Gmail";
+  tabs.appendChild(tabPhoto);tabs.appendChild(tabEmail);tabs.appendChild(tabGmail);
+  root.appendChild(tabs);
 
-  var imgPrev=el("img",{style:"width:100%;max-height:500px;object-fit:contain;border-radius:8px;display:none;margin:0 auto 8px"});
+  // ── Zone Photo ──
+  var photoZone=el("div");
+  var imgPrev=el("img",{style:"max-height:200px;max-width:100%;border-radius:8px;display:none;margin:0 auto 8px;display:none"});
   var hint=el("div");hint.innerHTML="<div style='font-size:38px;margin-bottom:8px'>📷</div><div style='font-size:15px;font-weight:700;color:#F1F5F9;margin-bottom:6px'>Ajouter une photo / capture</div><div style='font-size:12px;color:#94A3B8'>Appuyer pour sélectionner</div>";
   var chgHint=el("div",{style:"font-size:12px;color:#60A5FA;display:none"},"📷 Appuyer pour changer");
   var fi=el("input",{type:"file",accept:"image/*",style:"display:none"});
   var uz=el("label",{class:"upload-zone"});
   uz.appendChild(imgPrev);uz.appendChild(hint);uz.appendChild(chgHint);uz.appendChild(fi);
-  leftCol.appendChild(uz);
-
+  photoZone.appendChild(uz);
   fi.onchange=function(e){
     var file=e.target.files[0];if(!file)return;
     var ie=new Image(),url=URL.createObjectURL(file);
@@ -240,13 +392,79 @@ function renderNouveau(){
       aBtn.style.display="flex";
     };ie.src=url;
   };
-
   var aBtn=el("button",{class:"btn btn-primary btn-full",style:"margin-bottom:8px;display:none"});aBtn.textContent="🔍 Analyser l'image";
-  var prog=el("div",{class:"progress",style:"display:none"},[el("div",{class:"progress-bar"})]);
-  leftCol.appendChild(aBtn);leftCol.appendChild(prog);
-  var msgD=el("div",{style:"display:none"});leftCol.appendChild(msgD);
+  var progPhoto=el("div",{class:"progress",style:"display:none"},[el("div",{class:"progress-bar"})]);
+  photoZone.appendChild(aBtn);photoZone.appendChild(progPhoto);
 
-  // Form inputs
+  // ── Zone Email texte ──
+  var emailZone=el("div",{style:"display:none"});
+  emailZone.appendChild(el("div",{class:"info-box"},"Copie le texte complet de l'email reçu (objet + corps) et colle-le ci-dessous."));
+  var emailTA=el("textarea",{rows:"9",placeholder:"Colle ici le contenu de l'email...\n\nEx:\nObjet: Nouveau message pour Appartement T3 Paris 15e\nDe: Laurent Martin - laurent@email.com\n\nBonjour, je suis intéressé par votre bien..."});
+  emailTA.style.cssText="width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:10px;line-height:1.5";
+  var analyzeEmailBtn=el("button",{class:"btn btn-primary btn-full",style:"margin-bottom:8px"});analyzeEmailBtn.textContent="🔍 Analyser l'email";
+  var progEmail=el("div",{class:"progress",style:"display:none"},[el("div",{class:"progress-bar"})]);
+  emailZone.appendChild(emailTA);emailZone.appendChild(analyzeEmailBtn);emailZone.appendChild(progEmail);
+
+  // ── Zone Gmail ──
+  var gmailZone=el("div",{style:"display:none"});
+  var gmailContent=el("div");
+  function renderGmailZone(){
+    gmailContent.innerHTML="";
+    if(!state.gmailScript){
+      gmailContent.appendChild(el("div",{class:"info-box",style:"margin-bottom:14px"},"Configure d'abord le script Gmail dans ⚙️ Paramètres → Connexion Gmail."));
+      var goSettings=el("button",{class:"btn btn-outline btn-full"});goSettings.textContent="⚙️ Configurer Gmail";
+      goSettings.onclick=function(){setState({view:"settings"})};
+      gmailContent.appendChild(goSettings);
+    }else{
+      var lastDate=getLastEmailDate();
+      if(lastDate)gmailContent.appendChild(el("div",{style:"font-size:12px;color:#94A3B8;margin-bottom:12px"},"Dernière vérification : "+fmtDate(lastDate)));
+      var checkBtn=el("button",{class:"btn btn-primary btn-full",style:"margin-bottom:8px"});checkBtn.textContent="🔄 Vérifier les nouveaux emails";
+      var progGmail=el("div",{class:"progress",style:"display:none"},[el("div",{class:"progress-bar"})]);
+      var gmailResult=el("div");
+      checkBtn.onclick=function(){
+        checkBtn.disabled=true;checkBtn.textContent="⏳ Récupération en cours…";
+        progGmail.style.display="block";gmailResult.innerHTML="";
+        fetchGmailLeads(state.gmailScript,function(err,emails){
+          if(err||!emails.length){
+            progGmail.style.display="none";
+            checkBtn.disabled=false;checkBtn.textContent="🔄 Vérifier les nouveaux emails";
+            var msg=err?"Erreur : "+err:"Aucun nouvel email";
+            gmailResult.appendChild(el("div",{class:err?"err-box":"ok-box"},msg));
+            return;
+          }
+          processGmailEmails(emails,function(created,dupes,results){
+            progGmail.style.display="none";
+            checkBtn.disabled=false;checkBtn.textContent="🔄 Vérifier les nouveaux emails";
+            saveLeads(state.leads);
+            var summary=el("div",{class:"ok-box"});
+            summary.innerHTML="✓ Traitement terminé<br><strong>"+created+" lead"+(created>1?"s":"")+" créé"+(created>1?"s":"")+"</strong>"+(dupes?" · "+dupes+" doublon"+(dupes>1?"s":"")+" ignoré"+(dupes>1?"s":""):"");
+            gmailResult.appendChild(summary);
+            if(created>0)render();
+          });
+        });
+      };
+      gmailContent.appendChild(checkBtn);gmailContent.appendChild(progGmail);gmailContent.appendChild(gmailResult);
+    }
+  }
+  renderGmailZone();
+  gmailZone.appendChild(gmailContent);
+
+  // ── Switcher tabs ──
+  var msgD=el("div",{style:"display:none"});
+  function switchTab(t){
+    [tabPhoto,tabEmail,tabGmail].forEach(function(b){b.className="tab-btn"});
+    t.className="tab-btn active";
+    photoZone.style.display="none";emailZone.style.display="none";gmailZone.style.display="none";
+    msgD.innerHTML="";fDiv.style.display="none";
+  }
+  tabPhoto.onclick=function(){switchTab(tabPhoto);photoZone.style.display="block"};
+  tabEmail.onclick=function(){switchTab(tabEmail);emailZone.style.display="block"};
+  tabGmail.onclick=function(){switchTab(tabGmail);gmailZone.style.display="block";renderGmailZone()};
+
+  root.appendChild(photoZone);root.appendChild(emailZone);root.appendChild(gmailZone);
+  root.appendChild(msgD);
+
+  // ── Form inputs ──
   var pi=el("input",{type:"text",placeholder:"Prénom"});
   var ni=el("input",{type:"text",placeholder:"Nom"});
   var ti=el("input",{type:"tel",placeholder:"+33 6…"});
@@ -288,12 +506,23 @@ function renderNouveau(){
   sep.appendChild(mf("Email",ei));sep.appendChild(mf("Ville / Secteur",vi));
   sep.appendChild(mf("Bien recherché",bi));sep.appendChild(mf("Plateforme",pli));sep.appendChild(mf("Priorité",pri));
   sep.appendChild(mf("Message brut",mta));sep.appendChild(mf("Commentaire",cta));
+  // Qualification
+  sep.appendChild(el("div",{style:"border-top:1px solid #2A2F42;padding-top:12px;margin-top:4px;margin-bottom:10px"},
+    el("div",{style:"font-size:11px;font-weight:800;color:#F59E0B;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px"},"💰 Qualification financière")));
+  var budgetInp=el("input",{type:"text",placeholder:"Ex: 250 000€"});
+  sep.appendChild(mf("Budget",budgetInp));
+  var finSel=el("select");
+  ["Non précisé","Comptant","Prêt en cours","Prêt à monter"].forEach(function(o){var op=document.createElement("option");op.value=o;op.textContent=o;finSel.appendChild(op)});
+  sep.appendChild(mf("Financement",finSel));
+  var delaiSel=el("select");
+  ["Non précisé","Urgent — moins de 3 mois","3 à 6 mois","Plus de 6 mois"].forEach(function(o){var op=document.createElement("option");op.value=o;op.textContent=o;delaiSel.appendChild(op)});
+  sep.appendChild(mf("Délai d'achat",delaiSel));
   var vBtn=el("button",{class:"btn btn-success btn-full"});vBtn.textContent="✓ Valider et enregistrer";
   vBtn.onclick=function(){
-    var lead={id:genId(),dateEntree:today(),prenom:pi.value,nom:ni.value,telephone:ti.value,email:ei.value,ville:vi.value,bien:bi.value,plateforme:pli.value,messageBrut:mta.value,priorite:pri.value||"Normale",commentaire:cta.value,statut:"Nouveau",lienPhoto:imgData,historique:[{date:new Date().toISOString(),action:"Lead créé"},{date:new Date().toISOString(),action:"Données validées"}],relances:[],messageEnvoye:false,contactCree:false};
+    var lead={id:genId(),dateEntree:today(),createdAt:new Date().toISOString(),prenom:pi.value,nom:ni.value,telephone:ti.value,email:ei.value,ville:vi.value,bien:bi.value,plateforme:pli.value,messageBrut:mta.value,priorite:pri.value||"Normale",commentaire:cta.value,budget:typeof budgetInp!=="undefined"?budgetInp.value||"":"",financement:typeof finSel!=="undefined"?finSel.value||"Non précisé":"Non précisé",delai:typeof delaiSel!=="undefined"?delaiSel.value||"Non précisé":"Non précisé",statut:"Nouveau",lienPhoto:imgData,historique:[{date:new Date().toISOString(),action:"Lead créé"},{date:new Date().toISOString(),action:"Données validées"}],relances:[],messageEnvoye:false,contactCree:false,archived:false};
     setState({leads:[lead].concat(state.leads),selectedId:lead.id,view:"fiche"});
   };
-  sep.appendChild(vBtn);fDiv.appendChild(sep);rightCol.appendChild(fDiv);
+  sep.appendChild(vBtn);fDiv.appendChild(sep);root.appendChild(fDiv);
 
   function fillF(data){
     if(data.prenom){pi.value=data.prenom;f.prenom=data.prenom}
@@ -306,143 +535,131 @@ function renderNouveau(){
     if(data.messageBrut){mta.value=data.messageBrut;f.messageBrut=data.messageBrut}
   }
 
+  function showResult(ok,msg){
+    msgD.style.display="block";msgD.innerHTML="";
+    msgD.appendChild(el("div",{class:ok?"ok-box":"err-box"},msg));
+  }
+
+  // Analyse photo
   aBtn.onclick=function(){
     if(!imgData)return;
-    aBtn.disabled=true;aBtn.textContent="⏳ Analyse en cours…";prog.style.display="block";msgD.style.display="none";
+    aBtn.disabled=true;aBtn.textContent="⏳ Analyse en cours…";progPhoto.style.display="block";
     var b64=imgData.split(",")[1],mime=imgData.split(";")[0].split(":")[1]||"image/jpeg";
     gVision(b64,mime,state.apiKey,function(err,data){
-      prog.style.display="none";aBtn.style.display="none";msgD.style.display="block";msgD.innerHTML="";
-      if(err){
-        var eb=el("div",{class:"err-box"});eb.innerHTML="<strong style='color:#EF4444'>⚠ Extraction échouée</strong><br><span style='font-size:12px;color:#FCA5A5'>"+err+" — remplis les champs manuellement</span>";
-        msgD.appendChild(eb);
-      }else{
-        var ob=el("div",{class:"ok-box"});ob.textContent="✓ Données extraites — vérifie et corrige si besoin";
-        msgD.appendChild(ob);fillF(data);
-      }
+      progPhoto.style.display="none";aBtn.style.display="none";
+      if(err){showResult(false,"⚠ Extraction échouée : "+err+" — remplis manuellement");}
+      else{showResult(true,"✓ Données extraites — vérifie et corrige si besoin");fillF(data);}
       fDiv.style.display="block";
     });
   };
-  // Assemble 2-col layout
-  layout.appendChild(leftCol);layout.appendChild(rightCol);
+
+  // Analyse email texte
+  analyzeEmailBtn.onclick=function(){
+    var txt=emailTA.value.trim();
+    if(!txt){emailTA.style.borderColor="#EF4444";return}
+    emailTA.style.borderColor="#2A2F42";
+    analyzeEmailBtn.disabled=true;analyzeEmailBtn.textContent="⏳ Analyse en cours…";progEmail.style.display="block";
+    var prompt="Tu es expert en emails immobiliers.\nVoici le contenu d'un email reçu d'un acheteur potentiel.\nExtrais les informations et réponds UNIQUEMENT avec ce JSON (rien d'autre) :\n{\"prenom\":\"\",\"nom\":\"\",\"telephone\":\"\",\"email\":\"\",\"ville\":\"\",\"bien\":\"\",\"plateforme\":\"\",\"messageBrut\":\"\"}\n- prenom/nom : expéditeur du message\n- telephone : tout numéro dans le texte\n- email : adresse email de l'acheteur\n- ville : ville ou secteur recherché\n- bien : type de bien (dans l'objet ou le corps)\n- plateforme : déduit du contenu (leboncoin=LeBonCoin, seloger=SeLoger, pap=PAP, sinon=Email)\n- messageBrut : texte complet du message de l'acheteur\nContenu de l'email :\n"+txt;
+    gText(prompt,state.apiKey,function(err,res){
+      progEmail.style.display="none";analyzeEmailBtn.disabled=false;analyzeEmailBtn.textContent="🔍 Analyser l'email";
+      var m=res&&res.match(/\{[\s\S]*\}/);
+      if(err||!m){showResult(false,"⚠ Extraction échouée — remplis manuellement");}
+      else{try{var data=JSON.parse(m[0]);showResult(true,"✓ Données extraites — vérifie et corrige si besoin");fillF(data);}catch(e){showResult(false,"⚠ Erreur JSON — remplis manuellement");}}
+      fDiv.style.display="block";
+    });
+  };
+
   return root;
 }
 
-// ── Modal WhatsApp ────────────────────────────────────────────────────────────
-function openWA(lead){
+// ── Modal WhatsApp + Email ────────────────────────────────────────────────────
+function openWA(lead,relanceKey){
   var bg=el("div",{class:"modal-bg"});
   var mod=el("div",{class:"modal",style:"max-width:520px"});
   var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"});
-  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"💬 Réponse WhatsApp"));
+  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"💬 Réponse"));
   var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
   cx.onclick=function(){document.body.removeChild(bg)};
   hdr.appendChild(cx);mod.appendChild(hdr);
 
-  // Instructions libres + consignes
-  var instrDiv=el("div",{style:"margin-bottom:16px"});
-  instrDiv.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Instructions pour ce message (optionnel)"));
-  var instrHint=el("div",{style:"font-size:12px;color:#475569;margin-bottom:8px"});
-  instrHint.textContent="Ex: Rends le message plus court · Ajoute que je suis dispo samedi · Sois plus direct · Parle du prix";
-  var instrTA=el("textarea",{rows:"2",placeholder:"Tape tes instructions ici avant de régénérer…"});
-  instrTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box";
-  instrDiv.appendChild(instrHint);instrDiv.appendChild(instrTA);
+  // Sélecteur canal
+  var channelBar=el("div",{class:"tab-bar",style:"margin-bottom:14px"});
+  var tabWA=el("button",{class:"tab-btn active"});tabWA.textContent="📱 WhatsApp";
+  var tabMail=el("button",{class:"tab-btn"});tabMail.textContent="✉ Email";
+  channelBar.appendChild(tabWA);channelBar.appendChild(tabMail);
+  mod.appendChild(channelBar);
 
-  // Show saved consignes
-  var cons=loadConsignes();
-  if(cons){
-    var consDiv=el("div",{style:"padding:8px 12px;background:#1E2333;border-radius:8px;border-left:3px solid #3B82F6;margin-top:8px;font-size:12px;color:#94A3B8"});
-    consDiv.innerHTML="📋 <strong style='color:#60A5FA'>Consignes sauvegardées actives</strong>";
-    instrDiv.appendChild(consDiv);
-  }
-  mod.appendChild(instrDiv);
-  var ld=el("div",{style:"text-align:center;padding:40px 0;color:#94A3B8"});
-  ld.innerHTML="<div style='font-size:28px;margin-bottom:12px'>⏳</div>Génération du message…";
+  var ld=el("div",{style:"text-align:center;padding:30px 0;color:#94A3B8"});
+  ld.innerHTML="<div style='font-size:24px;margin-bottom:8px'>⏳</div>Génération…";
   mod.appendChild(ld);bg.appendChild(mod);document.body.appendChild(bg);
 
-  var consignes=loadConsignes();
-  var signature=loadSignature();
-  var contexte=lead._contexteWA||"nouveau";
-  var toneMap={"nouveau":"C'est le premier contact. Ton chaleureux, se présenter, montrer de l'intérêt pour le projet.","relance":"Pas de réponse au premier message. Ton de rappel poli et bienveillant, sans insistance.","echange":"Déjà en échange. Ton de suivi naturel, continuer la conversation.","apres_rdv":"Suite à un rendez-vous. Ton de remerciement, rappeler les points clés, proposer la prochaine étape."};
-  var toneInstruction=toneMap[contexte]||toneMap["nouveau"];
-  var prompt="Génère un message WhatsApp pour un acheteur immobilier.\nPrénom:"+(lead.prenom||"")+" | Ville:"+(lead.ville||"")+" | Bien:"+(lead.bien||"")+" | Plateforme:"+(lead.plateforme||"")+
-"\nMessage original:"+(lead.messageBrut||"")+
-"\nContexte: "+toneInstruction+
-(consignes?"\nConsignes personnelles à respecter absolument: "+consignes:"")+
-+(signature?"\nUtilise cette signature exacte : "+signature:"\nTermine par Bien cordialement, [Votre nom]")+
-"\nFormat: 3-4 lignes max. Uniquement le texte du message.";
+  // Sélectionner le bon template
+  var tplKey=relanceKey||"premier_contact";
+  var tplText=state.templates[tplKey]||state.templates["premier_contact"];
+  var baseMsg=applyTemplate(tplText,lead);
 
-  gText(prompt,state.apiKey,function(err,txt){
-    var msg=txt||"Bonjour "+(lead.prenom||"")+",\n\nMerci pour votre message"+(lead.bien?" concernant "+lead.bien:"")+(lead.ville?" à "+lead.ville:"")+". Je serais ravi(e) d'échanger avec vous.\n\nBien cordialement,\n[Votre nom]";
-    mod.removeChild(ld);
+  var waZone=el("div");
+  var mailZone=el("div",{style:"display:none"});
+
+  function buildWAZone(msg){
+    waZone.innerHTML="";
     var ta=el("textarea",{rows:"8",style:"width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:14px;resize:vertical;box-sizing:border-box;margin-bottom:14px"});
-    ta.value=msg;mod.appendChild(ta);
+    ta.value=msg;waZone.appendChild(ta);
     var br=el("div",{style:"display:flex;gap:10px"});
-    var rb=el("button",{class:"btn btn-ghost btn-full"});rb.textContent="↺ Régénérer";
+    var rb=el("button",{class:"btn btn-ghost btn-full"});rb.textContent="↺ IA";
     var wb=el("button",{class:"btn btn-wa btn-full"});wb.textContent="📱 Ouvrir WhatsApp";
-    br.appendChild(rb);br.appendChild(wb);mod.appendChild(br);
+    br.appendChild(rb);br.appendChild(wb);waZone.appendChild(br);
     var cd=el("div",{style:"display:none;margin-top:14px"});
-    var wn=el("div",{class:"warn-box"});wn.textContent="⚠ WhatsApp ouvert. As-tu envoyé le message ?";
+    var wn=el("div",{class:"warn-box"});wn.textContent="⚠ WhatsApp ouvert. As-tu envoyé ?";
     var cr=el("div",{style:"display:flex;gap:10px"});
     var rop=el("button",{class:"btn btn-ghost btn-full"});rop.textContent="↺ Rouvrir";
     var sb=el("button",{class:"btn btn-success btn-full"});sb.textContent="✓ Oui, envoyé";
-    cr.appendChild(rop);cr.appendChild(sb);cd.appendChild(wn);cd.appendChild(cr);mod.appendChild(cd);
-
+    cr.appendChild(rop);cr.appendChild(sb);cd.appendChild(wn);cd.appendChild(cr);waZone.appendChild(cd);
     rb.onclick=function(){
-    var instr=instrTA.value.trim();
-    var newPrompt=prompt+(instr?"\n\nInstructions supplémentaires pour cette version : "+instr:"");
-    ta.value="⏳ Génération…";rb.disabled=true;
-    gText(newPrompt,state.apiKey,function(e,t){ta.value=t||msg;rb.disabled=false});
-  };
-
+      ta.value="⏳…";rb.disabled=true;
+      var p="Améliore ce message WhatsApp pour un acheteur immobilier. Prénom:"+lead.prenom+" Bien:"+lead.bien+" Ville:"+lead.ville+". Message actuel:"+ta.value+". Retourne uniquement le texte amélioré.";
+      gText(p,state.apiKey,function(e,t){ta.value=t||msg;rb.disabled=false});
+    };
     function doOpen(){
-      // Trace ouverture WA dans historique
-      var upd=state.leads.map(function(l){
-        if(l.id!==lead.id)return l;
-        return Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"WhatsApp ouvert"}])});
-      });
+      var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"WhatsApp ouvert"}])})});
       setState({leads:upd});
       window.open("https://wa.me/"+(lead.telephone||"").replace(/\D/g,"")+"?text="+encodeURIComponent(ta.value),"_blank");
       br.style.display="none";cd.style.display="block";
     }
     wb.onclick=doOpen;rop.onclick=doOpen;
-
     sb.onclick=function(){
-      var rl=[{date:addDays(today(),1),label:"Relance J+1",done:false},{date:addDays(today(),3),label:"Relance J+3",done:false},{date:addDays(today(),7),label:"Relance J+7",done:false}];
-      var upd=state.leads.map(function(l){
-        if(l.id!==lead.id)return l;
-        return Object.assign({},l,{statut:"Message envoyé",messageEnvoye:true,dernierMessage:ta.value,relances:rl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Message WhatsApp envoyé · relances J+1/J+3/J+7 planifiées"}])});
-      });
-      setState({leads:upd});
-
-      // Proposer de copier le contact
-      var nom=[lead.prenom,lead.nom].filter(Boolean).join(" ");
-      if(nom&&lead.telephone){
-        var copyDiv=el("div",{style:"margin-top:14px"});
-        var okBox=el("div",{class:"ok-box",style:"margin-bottom:10px"});okBox.textContent="✓ Message confirmé ! Relances J+1/J+3/J+7 planifiées.";
-        // VCF contact button
-        var vcfBtn=el("button",{class:"btn btn-outline btn-full"});
-        vcfBtn.textContent="👤 Enregistrer le contact (.vcf)";
-        vcfBtn.onclick=function(){
-          var vcf="BEGIN:VCARD\nVERSION:3.0\nFN:"+nom+"\nTEL:"+lead.telephone+(lead.email?"\nEMAIL:"+lead.email:"")+(lead.ville?"\nADR:;;;"+lead.ville+";;;":"")+"\nNOTE:Lead "+lead.plateforme+" - "+fmtDate(lead.dateEntree)+"\nEND:VCARD";
-          var a=document.createElement("a");
-          a.href=URL.createObjectURL(new Blob([vcf],{type:"text/vcard"}));
-          a.download=nom.replace(/ /g,"_")+".vcf";a.click();
-          vcfBtn.textContent="✓ Téléchargé ! Ouvre le fichier pour ajouter le contact";
-          vcfBtn.style.color="#10B981";vcfBtn.style.borderColor="#10B981";
-        };
-
-        // Email relance button
-        var emailBtn=el("button",{class:"btn btn-ghost btn-full",style:"margin-top:8px"});
-        emailBtn.textContent="✉ Préparer email de relance J+1";
-        emailBtn.onclick=function(){document.body.removeChild(bg);openEmailModal(lead)};
-
-        var closeBtn2=el("button",{class:"btn btn-ghost btn-full",style:"margin-top:8px"});closeBtn2.textContent="Fermer";
-        closeBtn2.onclick=function(){document.body.removeChild(bg)};
-        copyDiv.appendChild(okBox);copyDiv.appendChild(vcfBtn);copyDiv.appendChild(emailBtn);copyDiv.appendChild(closeBtn2);
-        cd.innerHTML="";cd.appendChild(copyDiv);
-      } else {
-        document.body.removeChild(bg);
-      }
+      var rl=[{date:addDays(today(),1),label:"Relance J+1",done:false,canal:"whatsapp"},{date:addDays(today(),3),label:"Relance J+3",done:false,canal:"whatsapp+email"},{date:addDays(today(),7),label:"Relance J+7",done:false,canal:"whatsapp+email"}];
+      var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{statut:"Message envoyé",messageEnvoye:true,dernierMessage:ta.value,relances:rl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Message envoyé · relances J+1(WA)/J+3(WA+Mail)/J+7(WA+Mail) planifiées"}])})});
+      setState({leads:upd});document.body.removeChild(bg);
     };
+  }
+
+  function buildMailZone(msg){
+    mailZone.innerHTML="";
+    var subInp=el("input",{type:"text",placeholder:"Objet de l'email",style:"margin-bottom:10px"});
+    subInp.value="Suite à votre demande"+(lead.bien?" — "+lead.bien:"");
+    var ta=el("textarea",{rows:"8",style:"width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:14px;resize:vertical;box-sizing:border-box;margin-bottom:14px"});
+    ta.value=msg;mailZone.appendChild(subInp);mailZone.appendChild(ta);
+    var sendBtn=el("button",{class:"btn btn-primary btn-full"});sendBtn.textContent="✉ Ouvrir dans Mail";
+    sendBtn.onclick=function(){
+      var mailto="mailto:"+(lead.email||"")+"?subject="+encodeURIComponent(subInp.value)+"&body="+encodeURIComponent(ta.value);
+      window.open(mailto);
+      var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email ouvert dans Mail"}]))})});
+      setState({leads:upd});
+    };
+    mailZone.appendChild(sendBtn);
+  }
+
+  tabWA.onclick=function(){tabWA.className="tab-btn active";tabMail.className="tab-btn";waZone.style.display="block";mailZone.style.display="none"};
+  tabMail.onclick=function(){tabMail.className="tab-btn active";tabWA.className="tab-btn";mailZone.style.display="block";waZone.style.display="none"};
+
+  // Génération IA du message
+  var prompt="Génère un message professionnel et chaleureux pour un acheteur immobilier.\nPrénom:"+lead.prenom+" | Ville:"+lead.ville+" | Bien:"+lead.bien+"\nMessage original:"+lead.messageBrut+"\nBase-toi sur ce modèle et personnalise-le :\n"+baseMsg+"\nRetourne uniquement le texte du message.";
+  gText(prompt,state.apiKey,function(err,txt){
+    mod.removeChild(ld);
+    var msg=txt||baseMsg;
+    buildWAZone(msg);buildMailZone(msg);
+    mod.appendChild(waZone);mod.appendChild(mailZone);
   });
 }
 
@@ -451,24 +668,27 @@ function openEditRelances(lead){
   var bg=el("div",{class:"modal-bg"});
   var mod=el("div",{class:"modal",style:"max-width:380px"});
   var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"});
-  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"Modifier les dates"));
+  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"Modifier les relances"));
   var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
-  cx.onclick=function(){document.body.removeChild(bg)};
-  hdr.appendChild(cx);mod.appendChild(hdr);
+  cx.onclick=function(){document.body.removeChild(bg)};hdr.appendChild(cx);mod.appendChild(hdr);
   var rl=lead.relances.map(function(r){return Object.assign({},r)});
   rl.forEach(function(r,i){
     var d=el("div",{style:"margin-bottom:14px"});
-    d.appendChild(el("div",{class:"label"},r.label));
+    var lbl=el("div",{class:"label"});lbl.textContent=r.label+" — Canal : "+(r.canal==="whatsapp_email"?"WA + Email":"WhatsApp");
+    d.appendChild(lbl);
     var inp=el("input",{type:"date"});inp.value=r.date;
     inp.onchange=function(){rl[i].date=inp.value};
-    d.appendChild(inp);mod.appendChild(d);
+    var cSel=el("select",{style:"margin-top:8px"});
+    [{v:"whatsapp",t:"WhatsApp uniquement"},{v:"whatsapp_email",t:"WhatsApp + Email"},{v:"email",t:"Email uniquement"}].forEach(function(o){
+      var op=document.createElement("option");op.value=o.v;op.textContent=o.t;cSel.appendChild(op);
+    });
+    cSel.value=r.canal||"whatsapp";
+    cSel.onchange=function(){rl[i].canal=cSel.value};
+    d.appendChild(inp);d.appendChild(cSel);mod.appendChild(d);
   });
   var sv=el("button",{class:"btn btn-success btn-full",style:"margin-top:4px"});sv.textContent="✓ Enregistrer";
   sv.onclick=function(){
-    var upd=state.leads.map(function(l){
-      if(l.id!==lead.id)return l;
-      return Object.assign({},l,{relances:rl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Dates de relances modifiées"}])});
-    });
+    var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{relances:rl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Relances modifiées"}])})});
     setState({leads:upd,selectedId:lead.id});document.body.removeChild(bg);
   };
   mod.appendChild(sv);bg.appendChild(mod);document.body.appendChild(bg);
@@ -480,15 +700,29 @@ function renderFiche(lead){
   var bb=el("button",{class:"back-btn"});bb.textContent="← Retour";bb.onclick=function(){setState({view:"liste"})};
   root.appendChild(bb);
 
+  // Pipeline visuel
+  var pipe=el("div",{class:"pipeline-bar"});
+  var currentStep=(ST[lead.statut]||{step:0}).step;
+  PIPELINE_STEPS.forEach(function(s,i){
+    var step=el("div",{class:"pipeline-step"+(i<currentStep?" done":i===currentStep?" current":"")});
+    pipe.appendChild(step);
+  });
+  root.appendChild(pipe);
+
   // Header card
   var hc=el("div",{class:"card",style:"background:#1E2333;border-radius:12px;padding:18px;margin-bottom:12px"});
-  var hr=el("div",{style:"display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px"});
+  var hr2=el("div",{style:"display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px"});
   var nom=[lead.prenom,lead.nom].filter(Boolean).join(" ")||"Sans nom";
-  hr.appendChild(el("div",null,[el("div",{style:"font-size:21px;font-weight:900;color:#F1F5F9"},nom),el("div",{style:"font-size:12px;color:#94A3B8;margin-top:2px"},lead.id+" · "+fmtDate(lead.dateEntree))]));
+  var score=calcScore(lead);
+  var leftH=el("div");
+  leftH.appendChild(el("div",{style:"font-size:21px;font-weight:900;color:#F1F5F9"},nom));
+  leftH.appendChild(el("div",{style:"font-size:12px;color:#94A3B8;margin-top:2px"},lead.id+" · "+fmtDate(lead.dateEntree)+" · il y a "+daysAgo(lead.dateEntree)+" j"));
+  leftH.appendChild(scoreStars(score));
+  hr2.appendChild(leftH);
   var tr=el("div",{style:"display:flex;gap:8px;align-items:center;flex-wrap:wrap"});
   var p=PR[lead.priorite]||PR["Normale"];
   tr.appendChild(el("span",{style:"font-size:11px;font-weight:700;color:"+p.color},p.label));
-  tr.appendChild(stag(lead.statut));hr.appendChild(tr);hc.appendChild(hr);
+  tr.appendChild(stag(lead.statut));hr2.appendChild(tr);hc.appendChild(hr2);
   var inf=el("div",{style:"display:grid;grid-template-columns:1fr 1fr;gap:6px"});
   if(lead.telephone)inf.appendChild(el("div",{style:"font-size:13px;color:#F1F5F9"},"📞 "+lead.telephone));
   if(lead.email)inf.appendChild(el("div",{style:"font-size:13px;color:#F1F5F9"},"✉ "+lead.email));
@@ -498,39 +732,46 @@ function renderFiche(lead){
   if(lead.bien)hc.appendChild(el("div",{style:"margin-top:10px;font-size:13px;color:#60A5FA;padding:6px 10px;background:#1D3557;border-radius:6px"},"🏠 "+lead.bien));
   root.appendChild(hc);
 
-  // Actions
-  // VCF contact button - available from the start
-  var vcfTopBtn=el("button",{class:"btn btn-outline btn-full",style:"margin-bottom:10px"});
-  vcfTopBtn.innerHTML="👤 Enregistrer le contact"+(lead.contactCree?" <span style='color:#10B981;font-size:11px'>✓ déjà créé</span>":"");
-  vcfTopBtn.onclick=function(){
-    var nom=[lead.prenom,lead.nom].filter(Boolean).join(" ")||"Sans nom";
-    var vcf="BEGIN:VCARD\nVERSION:3.0\nFN:"+nom+"\nTEL:"+(lead.telephone||"")+(lead.email?"\nEMAIL:"+lead.email:"")+(lead.ville?"\nADR:;;;"+lead.ville+";;;":"")+
-    "\nNOTE:Lead "+(lead.plateforme||"")+" - "+fmtDate(lead.dateEntree)+"\nEND:VCARD";
-    var a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob([vcf],{type:"text/vcard"}));
-    a.download=(nom.replace(/ /g,"_"))+".vcf";a.click();
-    vcfTopBtn.innerHTML="✓ Contact téléchargé — ouvre le fichier .vcf pour l'enregistrer";
-    vcfTopBtn.style.color="#10B981";vcfTopBtn.style.borderColor="#10B981";
-    // Mark contact as created
-    if(!lead.contactCree){
-      var upd=state.leads.map(function(l){return l.id===lead.id?Object.assign({},l,{contactCree:true,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Contact créé (fichier .vcf téléchargé)"}])})  :l});
-      setState({leads:upd,selectedId:lead.id});
+  // Bloc qualification financière
+  if(lead.budget||(lead.financement&&lead.financement!=="Non précisé")||(lead.delai&&lead.delai!=="Non précisé")){
+    var qc=el("div",{class:"card",style:"margin-bottom:12px;border-left:3px solid #F59E0B"});
+    qc.appendChild(el("div",{style:"font-size:11px;font-weight:800;color:#F59E0B;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px"},"💰 Qualification financière"));
+    var qg=el("div",{style:"display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"});
+    function qItem(lbl,val){
+      var d=el("div",{style:"background:#0F1117;border-radius:8px;padding:8px;text-align:center"});
+      d.appendChild(el("div",{style:"font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px"},lbl));
+      d.appendChild(el("div",{style:"font-size:12px;font-weight:700;color:#F1F5F9"},val||"—"));
+      return d;
     }
-  };
-  root.appendChild(vcfTopBtn);
+    qg.appendChild(qItem("Budget",lead.budget||"—"));
+    qg.appendChild(qItem("Financement",(lead.financement&&lead.financement!=="Non précisé")?lead.financement:"—"));
+    qg.appendChild(qItem("Délai",(lead.delai&&lead.delai!=="Non précisé")?lead.delai:"—"));
+    qc.appendChild(qg);root.appendChild(qc);
+  }
 
+  // Actions
   var ag=el("div",{style:"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"});
-  var waB=el("button",{class:"btn btn-wa"});waB.textContent="💬 WhatsApp";waB.onclick=function(){openWA(lead)};
+  var waB=el("button",{class:"btn btn-wa"});waB.textContent="💬 Répondre";waB.onclick=function(){openWA(lead)};
   var stB=el("button",{class:"btn btn-outline"});stB.textContent="⇄ Statut";
   var edB=el("button",{class:"btn btn-ghost"});edB.textContent="✎ Modifier";
-  ag.appendChild(waB);ag.appendChild(stB);ag.appendChild(edB);
+  var archB=el("button",{class:"btn btn-ghost",style:"color:#6B7280;border-color:#6B7280"});archB.textContent="📦 Archiver";
+  archB.onclick=function(){
+    if(!confirm("Archiver ce lead dans la base clients dormants ?"))return;
+    var dormant=Object.assign({},lead,{archivedDate:today(),archived:true});
+    var newLeads=state.leads.filter(function(l){return l.id!==lead.id});
+    var newDormants=[dormant].concat(state.dormants);
+    setState({leads:newLeads,dormants:newDormants,view:"liste"});
+  };
+  ag.appendChild(waB);ag.appendChild(stB);ag.appendChild(edB);ag.appendChild(archB);
   if(lead.messageEnvoye&&!lead.contactCree){
     var ctB=el("button",{class:"btn btn-ghost"});ctB.textContent="👤 Créer contact";
     ctB.onclick=function(){
       var upd=state.leads.map(function(l){return l.id===lead.id?Object.assign({},l,{contactCree:true,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Contact créé"}])})  :l});
       setState({leads:upd,selectedId:lead.id});
     };ag.appendChild(ctB);
-  }else if(lead.contactCree){ag.appendChild(el("div",{style:"display:flex;align-items:center;justify-content:center;font-size:12px;color:#10B981"},"✓ Contact créé"))}
+  }else if(lead.contactCree){
+    ag.appendChild(el("div",{style:"display:flex;align-items:center;justify-content:center;font-size:12px;color:#10B981"},"✓ Contact créé"));
+  }
   root.appendChild(ag);
 
   // Statuts panel
@@ -561,6 +802,17 @@ function renderFiche(lead){
   var prd=el("div",{class:"field"});prd.appendChild(el("div",{class:"label"},"Priorité"));
   var prs=el("select");["Haute","Normale","Basse"].forEach(function(o){var op=document.createElement("option");op.value=o;op.textContent=o;prs.appendChild(op)});
   prs.value=lead.priorite||"Normale";prs.dataset.key="priorite";prd.appendChild(prs);ep.appendChild(prd);
+  // Qualification dans modification
+  ep.appendChild(el("div",{style:"border-top:1px solid #2A2F42;padding-top:10px;margin:4px 0 10px"},
+    el("div",{style:"font-size:11px;font-weight:800;color:#F59E0B;text-transform:uppercase;letter-spacing:0.06em"},"💰 Qualification")));
+  var ebi=el("input",{type:"text",placeholder:"Ex: 250 000€"});ebi.value=lead.budget||"";ebi.dataset.key="budget";
+  var ebd=el("div",{class:"field"});ebd.appendChild(el("div",{class:"label"},"Budget"));ebd.appendChild(ebi);ep.appendChild(ebd);
+  var efin=el("select");["Non précisé","Comptant","Prêt en cours","Prêt à monter"].forEach(function(o){var op=document.createElement("option");op.value=o;op.textContent=o;efin.appendChild(op)});
+  efin.value=lead.financement||"Non précisé";efin.dataset.key="financement";
+  var efind=el("div",{class:"field"});efind.appendChild(el("div",{class:"label"},"Financement"));efind.appendChild(efin);ep.appendChild(efind);
+  var edel=el("select");["Non précisé","Urgent — moins de 3 mois","3 à 6 mois","Plus de 6 mois"].forEach(function(o){var op=document.createElement("option");op.value=o;op.textContent=o;edel.appendChild(op)});
+  edel.value=lead.delai||"Non précisé";edel.dataset.key="delai";
+  var edeld=el("div",{class:"field"});edeld.appendChild(el("div",{class:"label"},"Délai d'achat"));edeld.appendChild(edel);ep.appendChild(edeld);
   var er=el("div",{style:"display:flex;gap:10px;margin-top:4px"});
   var ce=el("button",{class:"btn btn-ghost btn-full"});ce.textContent="Annuler";ce.onclick=function(){ep.style.display="none"};
   var se=el("button",{class:"btn btn-success btn-full"});se.textContent="✓ Enregistrer";
@@ -579,31 +831,20 @@ function renderFiche(lead){
     var rc=el("div",{class:"card",style:"margin-bottom:12px"});
     var rh=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"});
     rh.appendChild(el("div",{class:"label"},"Relances planifiées"));
-    var erb=el("button",{class:"btn btn-ghost btn-sm"});erb.textContent="✎ Modifier dates";
+    var erb=el("button",{class:"btn btn-ghost btn-sm"});erb.textContent="✎ Modifier";
     erb.onclick=function(){openEditRelances(lead)};rh.appendChild(erb);rc.appendChild(rh);
     lead.relances.forEach(function(r,i){
       var rr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;padding:8px 0;"+(i<lead.relances.length-1?"border-bottom:1px solid #2A2F42":"")});
-      var rl=el("div");
-      rl.appendChild(el("div",{style:"font-size:13px;font-weight:600;color:"+(r.done?"#475569":isPast(r.date)?"#EF4444":"#F1F5F9")},r.label));
+      var rl2=el("div");
+      var canalLabel=r.canal==="whatsapp_email"?"📱✉":r.canal==="email"?"✉":"📱";
+      rl2.appendChild(el("div",{style:"font-size:13px;font-weight:600;color:"+(r.done?"#475569":isPast(r.date)?"#EF4444":"#F1F5F9")},canalLabel+" "+r.label));
       var rd=el("div",{style:"font-size:11px;color:"+(r.done?"#475569":isToday(r.date)?"#F59E0B":"#94A3B8")});
       rd.textContent=r.done?"✓ Effectuée":isToday(r.date)?"⚡ Aujourd'hui":isPast(r.date)?"⚠ En retard":fmtDate(r.date);
-      rl.appendChild(rd);rr.appendChild(rl);
+      rl2.appendChild(rd);rr.appendChild(rl2);
       if(!r.done){
-        var rBtns=el("div",{style:"display:flex;gap:6px;flex-wrap:wrap"});
-        var db=el("button",{class:"btn btn-outline btn-sm"});db.textContent="✓ Fait";
-        (function(idx){db.onclick=function(){
-          var nrl=lead.relances.map(function(x,j){return j===idx?Object.assign({},x,{done:true}):x});
-          var upd=state.leads.map(function(l){return l.id===lead.id?Object.assign({},l,{relances:nrl,historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:lead.relances[idx].label+" effectuée"}])})  :l});
-          setState({leads:upd,selectedId:lead.id});
-        }})(i);
-        rBtns.appendChild(db);
-        // Email button for due relances
-        if(isToday(r.date)||isPast(r.date)){
-          var emBtn=el("button",{class:"btn btn-ghost btn-sm"});emBtn.textContent="✉ Email";
-          (function(ll){emBtn.onclick=function(){openEmailModal(ll)}})(lead);
-          rBtns.appendChild(emBtn);
-        }
-        rr.appendChild(rBtns);
+        var db=el("button",{class:"btn btn-outline btn-sm"});db.textContent="Relancer";
+        (function(idx){db.onclick=function(){openWA(lead,"relance_"+(idx===0?"j1":idx===1?"j3":"j7"))}})(i);
+        rr.appendChild(db);
       }
       rc.appendChild(rr);
     });root.appendChild(rc);
@@ -642,7 +883,22 @@ function renderFiche(lead){
 function renderListe(){
   var root=el("div");
   root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:16px"},"Tous les leads"));
-  var si=el("input",{type:"text",placeholder:"🔍 Nom, téléphone, ville…",style:"margin-bottom:12px"});root.appendChild(si);
+  var si=el("input",{type:"text",placeholder:"🔍 Nom, téléphone, ville…",style:"margin-bottom:8px"});root.appendChild(si);
+  var sortRow=el("div",{style:"display:flex;gap:8px;margin-bottom:12px;align-items:center"});
+  var sortSel=el("select",{style:"flex:1;padding:7px 10px;font-size:12px"});
+  [["date","↓ Date"],["priorite","Priorité"],["score","Score"],["statut","Statut"]].forEach(function(s){var op=document.createElement("option");op.value=s[0];op.textContent=s[1];sortSel.appendChild(op)});
+  sortRow.appendChild(el("span",{style:"font-size:12px;color:#94A3B8;white-space:nowrap"},"Trier :"));
+  sortRow.appendChild(sortSel);root.appendChild(sortRow);
+
+  // Tri
+  var triRow=el("div",{style:"display:flex;gap:8px;margin-bottom:8px;align-items:center"});
+  triRow.appendChild(el("span",{style:"font-size:11px;color:#94A3B8;font-weight:700"},"Trier :"));
+  var triSel=el("select",{style:"width:auto;padding:5px 10px;font-size:12px"});
+  [{v:"date",t:"Date ↓"},{v:"score",t:"Score ↓"},{v:"priorite",t:"Priorité"},{v:"statut",t:"Statut"}].forEach(function(o){
+    var op=document.createElement("option");op.value=o.v;op.textContent=o.t;triSel.appendChild(op);
+  });
+  triRow.appendChild(triSel);root.appendChild(triRow);
+
   var fr=el("div",{style:"display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"});
   var ld=el("div");root.appendChild(fr);root.appendChild(ld);
   var cf="";
@@ -652,22 +908,49 @@ function renderListe(){
     var fil=state.leads.filter(function(l){
       var ok=!q||[l.prenom,l.nom,l.telephone,l.ville,l.email].some(function(v){return v&&v.toLowerCase().indexOf(q)>=0});
       return ok&&(!cf||l.statut===cf);
-    }).sort(function(a,b){return b.dateEntree.localeCompare(a.dateEntree)});
+    });
+    // Tri
+    var tri=triSel.value;
+    fil.sort(function(a,b){
+      if(tri==="score")return calcScore(b)-calcScore(a);
+      if(tri==="priorite"){var po={"Haute":0,"Normale":1,"Basse":2};return (po[a.priorite]||1)-(po[b.priorite]||1)}
+      if(tri==="statut")return a.statut.localeCompare(b.statut);
+      return b.dateEntree.localeCompare(a.dateEntree);
+    });
     ld.innerHTML="";
     if(!fil.length){ld.appendChild(el("div",{style:"text-align:center;color:#94A3B8;padding:40px 0;font-size:14px"},state.leads.length===0?"Aucun lead enregistré":"Aucun résultat"));return}
     fil.forEach(function(l){
-      var hr=l.relances&&l.relances.some(function(r){return!r.done&&(isToday(r.date)||isPast(r.date))});
-      var card=el("div",{class:"card",style:"cursor:pointer;border-color:"+(hr?"rgba(245,158,11,0.3)":"#2A2F42")});
+      var hr2=l.relances&&l.relances.some(function(r){return!r.done&&(isToday(r.date)||isPast(r.date))});
+      var card=el("div",{class:"card",style:"cursor:pointer;border-color:"+(hr2?"rgba(245,158,11,0.3)":"#2A2F42")});
       var top=el("div",{style:"display:flex;justify-content:space-between;align-items:flex-start"});
-      top.appendChild(el("div",null,[el("div",{style:"font-size:15px;font-weight:800;color:#F1F5F9"},[l.prenom,l.nom].filter(Boolean).join(" ")||"Sans nom"),el("div",{style:"font-size:12px;color:#94A3B8;margin-top:2px"},[l.ville,l.bien].filter(Boolean).join(" · ")||"—")]));
+      var tl=el("div");
+      tl.appendChild(el("div",{style:"font-size:15px;font-weight:800;color:#F1F5F9"},[l.prenom,l.nom].filter(Boolean).join(" ")||"Sans nom"));
+      tl.appendChild(el("div",{style:"font-size:12px;color:#94A3B8;margin-top:2px"},[l.ville,l.bien].filter(Boolean).join(" · ")||"—"));
+      var dayTxt=daysAgo(l.dateEntree)===0?"Aujourd'hui":daysAgo(l.dateEntree)===1?"Hier":"il y a "+daysAgo(l.dateEntree)+" j";
+      tl.appendChild(el("div",{style:"font-size:11px;color:#475569;margin-top:2px"},dayTxt));
+      top.appendChild(tl);
       var tr2=el("div",{style:"display:flex;flex-direction:column;align-items:flex-end;gap:4px"});
       tr2.appendChild(stag(l.statut,true));
-      if(hr)tr2.appendChild(el("span",{style:"font-size:10px;color:#F59E0B;font-weight:700"},"⚡ Relance"));
+      tr2.appendChild(scoreStars(calcScore(l),true));
+      var ri=responseIndicator(l);if(ri)tr2.appendChild(ri);
+      if(hr2)tr2.appendChild(el("span",{style:"font-size:10px;color:#F59E0B;font-weight:700"},"⚡ Relance"));
       top.appendChild(tr2);card.appendChild(top);
       var pp=PR[l.priorite]||PR["Normale"];
       card.appendChild(el("div",{style:"display:flex;justify-content:space-between;margin-top:8px"},
         [el("span",{style:"font-size:11px;color:#475569"},(l.telephone||"—")+" · "+(l.plateforme||"—")),
          el("span",{style:"font-size:11px;font-weight:700;color:"+pp.color},pp.label)]));
+      if(l.messageEnvoye){
+        var qRow=el("div",{style:"display:flex;justify-content:flex-end;margin-top:8px"});
+        var qBtn=el("button",{class:"btn btn-wa btn-sm"});qBtn.innerHTML="💬 Relancer";
+        (function(lead){qBtn.onclick=function(e){e.stopPropagation();
+          var key="premier_contact";
+          if(lead.statut==="Message envoyé")key="relance_j1";
+          else if(lead.statut==="En échange")key="relance_j3";
+          else if(lead.statut==="RDV proposé"||lead.statut==="Visite prévue")key="relance_j7";
+          openWA(lead,key);
+        }})(l);
+        qRow.appendChild(qBtn);card.appendChild(qRow);
+      }
       card.onclick=function(){setState({selectedId:l.id,view:"fiche"})};ld.appendChild(card);
     });
   }
@@ -682,22 +965,56 @@ function renderListe(){
       btn.textContent=s+" ("+cnt+")";btn.onclick=function(){cf=cf===s?"":s;mkPills();reList()};fr.appendChild(btn);
     });
   }
-  mkPills();reList();si.oninput=reList;return root;
+  mkPills();reList();si.oninput=reList;triSel.onchange=reList;return root;
 }
 
 // ── Relances du jour ──────────────────────────────────────────────────────────
+
+// ── Pipeline Kanban ───────────────────────────────────────────────────────────
+function renderPipeline(){
+  var root=el("div");
+  root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:4px"},"Pipeline"));
+  root.appendChild(el("div",{style:"font-size:13px;color:#94A3B8;margin-bottom:16px"},"Vue par statut"));
+  var cols=el("div",{style:"display:flex;gap:10px;overflow-x:auto;padding-bottom:16px;-webkit-overflow-scrolling:touch"});
+  Object.keys(ST).forEach(function(s){
+    var cfg=ST[s];
+    var leads=state.leads.filter(function(l){return l.statut===s});
+    var col=el("div",{style:"min-width:180px;flex-shrink:0"});
+    var hdr=el("div",{style:"padding:8px 10px;border-radius:8px 8px 0 0;background:"+cfg.bg+";border:1px solid "+cfg.color+"44;border-bottom:none"});
+    hdr.innerHTML="<span style='color:"+cfg.color+";font-size:12px;font-weight:800'>"+cfg.icon+" "+s+"</span><span style='float:right;color:"+cfg.color+";font-size:11px;font-weight:700'>"+leads.length+"</span>";
+    var body=el("div",{style:"border:1px solid "+cfg.color+"33;border-top:none;border-radius:0 0 8px 8px;padding:8px;min-height:80px;background:#181C27"});
+    if(!leads.length)body.appendChild(el("div",{style:"font-size:11px;color:#475569;text-align:center;padding:12px 0"},"Aucun"));
+    leads.forEach(function(l){
+      var days=daysSince(l.dateEntree);
+      var dc=days<=1?"#10B981":days<=3?"#F59E0B":"#EF4444";
+      var card=el("div",{style:"background:#1E2333;border:1px solid #2A2F42;border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer"});
+      card.appendChild(el("div",{style:"font-size:13px;font-weight:700;color:#F1F5F9;margin-bottom:4px"},[l.prenom,l.nom].filter(Boolean).join(" ")||"Sans nom"));
+      if(l.bien)card.appendChild(el("div",{style:"font-size:11px;color:#94A3B8;margin-bottom:4px"},l.bien.substring(0,30)));
+      var bot=el("div",{style:"display:flex;justify-content:space-between;align-items:center"});
+      var sd=el("span");sd.innerHTML=scoreStars(l.score||calcScore(l));
+      bot.appendChild(sd);
+      bot.appendChild(el("span",{style:"font-size:10px;font-weight:700;color:"+dc},"J+"+days));
+      var rip=responseIndicator(l);if(rip)bot.appendChild(rip);
+      card.appendChild(bot);
+      card.onclick=function(){setState({selectedId:l.id,view:"fiche"})};
+      body.appendChild(card);
+    });
+    col.appendChild(hdr);col.appendChild(body);cols.appendChild(col);
+  });
+  root.appendChild(cols);return root;
+}
+
 function renderRelances(){
   var root=el("div");
   root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:4px"},"Relances du jour"));
   root.appendChild(el("div",{style:"font-size:13px;color:#94A3B8;margin-bottom:14px"},fmtDate(today())));
 
-  // Notification banner
-  if("Notification" in window){
+  if("Notification"in window){
     if(Notification.permission==="default"){
       var nb=el("div",{class:"notif-bar"});
       nb.appendChild(el("div",{style:"font-size:13px;color:#F1F5F9;flex:1"},"🔔 Activer les rappels relances"));
       var nbtn=el("button",{class:"btn btn-outline btn-sm"});nbtn.textContent="Activer";
-      nbtn.onclick=function(){askNotif(function(ok){nb.innerHTML=ok?"<div style='font-size:13px;color:#10B981'>✓ Notifications activées !</div>":"<div style='font-size:13px;color:#EF4444'>Refusé dans les réglages</div>"})};
+      nbtn.onclick=function(){askNotif(function(ok){nb.innerHTML=ok?"<div style='font-size:13px;color:#10B981'>✓ Activées !</div>":"<div style='font-size:13px;color:#EF4444'>Refusé dans les réglages</div>"})};
       nb.appendChild(nbtn);root.appendChild(nb);
     }else if(Notification.permission==="granted"){
       root.appendChild(el("div",{style:"font-size:12px;color:#10B981;margin-bottom:12px"},"🔔 Notifications activées"));
@@ -722,11 +1039,22 @@ function renderRelances(){
     var s=el("div",{style:"margin-bottom:20px"});
     s.appendChild(el("div",{class:"section-title",style:"color:"+color},title+" ("+items.length+")"));
     items.forEach(function(item){
+      var canalLabel=item.r.canal==="whatsapp_email"?"📱✉ ":item.r.canal==="email"?"✉ ":"📱 ";
       var c=el("div",{class:"card",style:"border-color:"+color+"33;cursor:pointer"});
       var top=el("div",{style:"display:flex;justify-content:space-between;align-items:flex-start"});
-      top.appendChild(el("div",null,[el("div",{style:"font-size:14px;font-weight:800;color:#F1F5F9"},[item.lead.prenom,item.lead.nom].filter(Boolean).join(" ")||"Sans nom"),el("div",{style:"font-size:12px;color:#94A3B8"},item.r.label+" · "+(item.lead.ville||"—"))]));
+      top.appendChild(el("div",null,[
+        el("div",{style:"font-size:14px;font-weight:800;color:#F1F5F9"},[item.lead.prenom,item.lead.nom].filter(Boolean).join(" ")||"Sans nom"),
+        el("div",{style:"font-size:12px;color:#94A3B8"},canalLabel+item.r.label+" · "+(item.lead.ville||"—"))
+      ]));
       top.appendChild(stag(item.lead.statut,true));c.appendChild(top);
-      c.appendChild(el("div",{style:"font-size:12px;color:#94A3B8;margin-top:6px"},item.lead.telephone||"—"));
+      var row=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-top:6px"});
+      row.appendChild(el("div",{style:"font-size:12px;color:#94A3B8"},item.lead.telephone||"—"));
+      var relBtn=el("button",{class:"btn btn-wa btn-sm"});relBtn.innerHTML="💬 Relancer";
+      (function(lead,r){relBtn.onclick=function(e){e.stopPropagation();
+        var key=r.label.indexOf("J+1")>=0?"relance_j1":r.label.indexOf("J+3")>=0?"relance_j3":"relance_j7";
+        openWA(lead,key);
+      }})(item.lead,item.r);
+      row.appendChild(relBtn);c.appendChild(row);
       c.onclick=function(){setState({selectedId:item.lead.id,view:"fiche"})};s.appendChild(c);
     });root.appendChild(s);
   }
@@ -745,20 +1073,40 @@ function renderDashboard(){
   var retard=0;leads.forEach(function(l){(l.relances||[]).forEach(function(r){if(!r.done&&isPast(r.date))retard++})});
   var weekAgo=addDays(today(),-7);
   var newWeek=leads.filter(function(l){return l.dateEntree>=weekAgo}).length;
+  var avgScore=total?Math.round(leads.reduce(function(a,l){return a+calcScore(l)},0)/total*10)/10:0;
 
   var sg=el("div",{style:"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"});
-  function sc(num,lbl,color){
+  function sc(num,lbl,color,sub){
     var c=el("div",{class:"stat-card"});
     c.appendChild(el("div",{class:"stat-num",style:"color:"+(color||"#F1F5F9")},num+""));
-    c.appendChild(el("div",{class:"stat-label"},lbl));return c;
+    c.appendChild(el("div",{class:"stat-label"},lbl));
+    if(sub)c.appendChild(el("div",{style:"font-size:11px;color:#475569;margin-top:4px"},sub));
+    return c;
   }
-  sg.appendChild(sc(total,"Total leads","#3B82F6"));
-  sg.appendChild(sc(newWeek,"Cette semaine","#10B981"));
+  sg.appendChild(sc(total,"Total leads","#3B82F6","dont "+newWeek+" cette semaine"));
   sg.appendChild(sc(rdvs,"RDV / Visites","#8B5CF6"));
   sg.appendChild(sc(retard,"Relances retard",retard>0?"#EF4444":"#10B981"));
+  sg.appendChild(sc(avgScore,"Score moyen","#F59E0B","sur 5 ★"));
   root.appendChild(sg);
 
   if(total>0){
+    // Par plateforme
+    var platCard=el("div",{class:"card",style:"margin-bottom:16px"});
+    platCard.appendChild(el("div",{class:"label",style:"margin-bottom:14px"},"Par plateforme"));
+    var platCount={};
+    leads.forEach(function(l){var p=l.plateforme||"Autre";platCount[p]=(platCount[p]||0)+1});
+    Object.keys(platCount).sort(function(a,b){return platCount[b]-platCount[a]}).forEach(function(p){
+      var pct=Math.round(platCount[p]/total*100);
+      var row=el("div",{style:"margin-bottom:10px"});
+      var rh=el("div",{style:"display:flex;justify-content:space-between;margin-bottom:5px"});
+      rh.appendChild(el("span",{style:"font-size:12px;color:#F1F5F9;font-weight:600"},p));
+      rh.appendChild(el("span",{style:"font-size:12px;color:#94A3B8"},platCount[p]+" ("+pct+"%)"));
+      var bar=el("div",{style:"height:6px;background:#2A2F42;border-radius:3px;overflow:hidden"});
+      bar.appendChild(el("div",{style:"height:100%;width:"+pct+"%;background:#3B82F6;border-radius:3px"}));
+      row.appendChild(rh);row.appendChild(bar);platCard.appendChild(row);
+    });root.appendChild(platCard);
+
+    // Répartition statuts
     var rc=el("div",{class:"card",style:"margin-bottom:16px"});
     rc.appendChild(el("div",{class:"label",style:"margin-bottom:14px"},"Répartition par statut"));
     Object.keys(ST).forEach(function(s){
@@ -773,17 +1121,14 @@ function renderDashboard(){
       row.appendChild(rh);row.appendChild(bar);rc.appendChild(row);
     });root.appendChild(rc);
 
-    var lc=el("div",{class:"card"});
-    lc.appendChild(el("div",{class:"label",style:"margin-bottom:12px"},"Derniers leads"));
-    leads.slice().sort(function(a,b){return b.dateEntree.localeCompare(a.dateEntree)}).slice(0,5).forEach(function(l,i,arr){
-      var row=el("div",{style:"display:flex;justify-content:space-between;align-items:center;padding:8px 0;"+(i<arr.length-1?"border-bottom:1px solid #2A2F42":"")});
-      var lft=el("div");
-      lft.appendChild(el("div",{style:"font-size:13px;font-weight:700;color:#F1F5F9"},[l.prenom,l.nom].filter(Boolean).join(" ")||"Sans nom"));
-      lft.appendChild(el("div",{style:"font-size:11px;color:#94A3B8"},fmtDate(l.dateEntree)+(l.ville?" · "+l.ville:"")));
-      row.appendChild(lft);row.appendChild(stag(l.statut,true));
-      row.style.cursor="pointer";row.onclick=function(){setState({selectedId:l.id,view:"fiche"})};
-      lc.appendChild(row);
-    });root.appendChild(lc);
+    // Clients dormants
+    if(state.dormants.length>0){
+      var dc=el("div",{class:"card"});
+      dc.appendChild(el("div",{class:"label",style:"margin-bottom:10px"},"📦 Clients dormants ("+state.dormants.length+")"));
+      var viewDorm=el("button",{class:"btn btn-ghost btn-full btn-sm"});viewDorm.textContent="Voir la base clients dormants";
+      viewDorm.onclick=function(){setState({view:"dormants"})};
+      dc.appendChild(viewDorm);root.appendChild(dc);
+    }
   }else{
     root.appendChild(el("div",{style:"text-align:center;padding:40px 0"},
       [el("div",{style:"font-size:36px;margin-bottom:12px"},"📊"),
@@ -792,147 +1137,137 @@ function renderDashboard(){
   return root;
 }
 
-// ── Email Modal ───────────────────────────────────────────────────────────────
-function openEmailModal(lead){
-  var bg=el("div",{class:"modal-bg"});
-  var mod=el("div",{class:"modal",style:"max-width:560px"});
-  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"});
-  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"✉ Email de relance"));
-  var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
-  cx.onclick=function(){document.body.removeChild(bg)};
-  hdr.appendChild(cx);mod.appendChild(hdr);
+// ── Clients dormants ──────────────────────────────────────────────────────────
+function renderDormants(){
+  var root=el("div");
+  var bb=el("button",{class:"back-btn"});bb.textContent="← Retour";bb.onclick=function(){setState({view:"dashboard"})};
+  root.appendChild(bb);
+  root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:4px"},"Clients dormants"));
+  root.appendChild(el("div",{style:"font-size:13px;color:#94A3B8;margin-bottom:16px"},"Leads archivés — à recontacter pour un nouveau projet"));
 
-  // Instructions libres
-  var instrDiv=el("div",{style:"margin-bottom:14px"});
-  instrDiv.appendChild(el("div",{class:"label",style:"margin-bottom:6px"},"Instructions pour cet email (optionnel)"));
-  var instrTA=el("textarea",{rows:"2",placeholder:"Ex: Mentionne la visite possible ce weekend · Parle du prix · Sois plus formel…"});
-  instrTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box";
-  instrDiv.appendChild(instrTA);mod.appendChild(instrDiv);
-
-  var loading=el("div",{style:"text-align:center;padding:30px 0;color:#94A3B8"});
-  loading.innerHTML="<div style='font-size:24px;margin-bottom:8px'>⏳</div>Génération de l'email…";
-  mod.appendChild(loading);bg.appendChild(mod);document.body.appendChild(bg);
-
-  var signature=loadSignature();
-  var consignes=loadConsignes();
-
-  function genEmail(instr){
-    var prompt="Génère un email de relance professionnel pour un acheteur immobilier.\nPrénom:"+(lead.prenom||"")+" | Nom:"+(lead.nom||"")+" | Ville:"+(lead.ville||"")+" | Bien:"+(lead.bien||"")+
-    "\nContexte: Suite à un premier message WhatsApp envoyé, pas encore de réponse. Relance douce J+1."+
-    (consignes?"\nConsignes: "+consignes:"")+
-    (instr?"\nInstructions supplémentaires: "+instr:"")+
-    (signature?"\nSignature à utiliser: "+signature:"\nTermine par Bien cordialement, [Votre nom]")+
-    "\nFormat: Objet de l'email sur la première ligne commençant par 'Objet:', puis le corps de l'email. Professionnel, chaleureux, max 5 lignes.";
-
-    var genBtn2=null;
-    gText(prompt,state.apiKey,function(err,txt){
-      mod.removeChild(loading);
-      var emailTxt=txt||("Objet: Votre recherche "+(lead.bien||"immobilière")+"\n\nBonjour "+(lead.prenom||"")+"\n\nJe me permets de revenir vers vous suite à votre demande concernant "+(lead.bien||"votre recherche")+(lead.ville?" à "+lead.ville:"")+". Êtes-vous toujours en recherche active ?\n\n"+(signature||"Bien cordialement,\n[Votre nom]"));
-
-      // Split objet / corps
-      var lines=emailTxt.split("\n");
-      var objetLine=lines[0].replace(/^Objet:\s*/i,"").trim();
-      var corps=lines.slice(1).join("\n").trim();
-
-      mod.appendChild(el("div",{class:"label",style:"margin-bottom:6px"},"Objet"));
-      var objetInp=el("input",{type:"text"});objetInp.value=objetLine;
-      objetInp.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:14px;box-sizing:border-box;margin-bottom:14px";
-      mod.appendChild(objetInp);
-
-      mod.appendChild(el("div",{class:"label",style:"margin-bottom:6px"},"Corps de l'email"));
-      var corpsTA=el("textarea",{rows:"8"});corpsTA.value=corps;
-      corpsTA.style.cssText="width:100%;padding:12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:14px;resize:vertical;box-sizing:border-box;margin-bottom:14px";
-      mod.appendChild(corpsTA);
-
-      var btnRow=el("div",{style:"display:flex;gap:10px;margin-bottom:10px"});
-      genBtn2=el("button",{class:"btn btn-ghost btn-full"});genBtn2.textContent="↺ Régénérer";
-      genBtn2.onclick=function(){
-        var instr2=instrTA.value.trim();
-        corpsTA.value="⏳…";genBtn2.disabled=true;
-        var p2=prompt+(instr2?"\nInstructions supplémentaires: "+instr2:"");
-        gText(p2,state.apiKey,function(e,t){
-          if(t){var l2=t.split("\n");objetInp.value=l2[0].replace(/^Objet:\s*/i,"").trim();corpsTA.value=l2.slice(1).join("\n").trim();}
-          genBtn2.disabled=false;
-        });
-      };
-
-      var sendBtn=el("button",{class:"btn btn-primary btn-full"});sendBtn.textContent="📧 Ouvrir dans ma messagerie";
-      sendBtn.onclick=function(){
-        var to=lead.email||"";
-        var subj=encodeURIComponent(objetInp.value);
-        var body=encodeURIComponent(corpsTA.value);
-        window.open("mailto:"+to+"?subject="+subj+"&body="+body,"_blank");
-        sendBtn.textContent="✓ Messagerie ouverte";
-
-        // Log in history
-        var upd=state.leads.map(function(l){
-          if(l.id!==lead.id)return l;
-          return Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email de relance préparé"}])});
-        });
-        setState({leads:upd});
-      };
-
-      btnRow.appendChild(genBtn2);btnRow.appendChild(sendBtn);mod.appendChild(btnRow);
-
-      if(!lead.email){
-        var noEmail=el("div",{style:"font-size:12px;color:#F59E0B;text-align:center"});
-        noEmail.textContent="⚠ Pas d'email enregistré pour ce lead — ajoute-le dans la fiche";
-        mod.appendChild(noEmail);
-      }
-    });
+  if(!state.dormants.length){
+    root.appendChild(el("div",{style:"text-align:center;padding:40px 0"},
+      [el("div",{style:"font-size:36px;margin-bottom:12px"},"📦"),
+       el("div",{style:"font-size:14px;color:#94A3B8"},"Aucun client dormant")]));
+    return root;
   }
 
-  genEmail("");
+  state.dormants.forEach(function(d){
+    var card=el("div",{class:"dormant-card"});
+    var top=el("div",{style:"display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"});
+    top.appendChild(el("div",null,[
+      el("div",{style:"font-size:15px;font-weight:800;color:#F1F5F9"},[d.prenom,d.nom].filter(Boolean).join(" ")||"Sans nom"),
+      el("div",{style:"font-size:12px;color:#94A3B8"},fmtDate(d.dateEntree)+" · Archivé le "+fmtDate(d.archivedDate))
+    ]));
+    top.appendChild(el("span",{style:"font-size:11px;color:#6B7280;font-weight:600"},"Dormant"));
+    card.appendChild(top);
+    if(d.bien||d.ville)card.appendChild(el("div",{style:"font-size:13px;color:#60A5FA;margin-bottom:8px"},"🏠 "+(d.bien||"")+(d.ville?" · "+d.ville:"")));
+    var btnRow=el("div",{style:"display:flex;gap:8px"});
+    var reactBtn=el("button",{class:"btn btn-outline btn-sm"});reactBtn.textContent="♻ Réactiver";
+    reactBtn.onclick=function(){
+      var lead=Object.assign({},d,{archived:false,archivedDate:null,statut:"Nouveau",historique:(d.historique||[]).concat([{date:new Date().toISOString(),action:"Lead réactivé depuis clients dormants"}])});
+      var newDormants=state.dormants.filter(function(x){return x.id!==d.id});
+      setState({leads:[lead].concat(state.leads),dormants:newDormants,selectedId:lead.id,view:"fiche"});
+    };
+    var waBtn2=el("button",{class:"btn btn-wa btn-sm"});waBtn2.textContent="💬 Recontacter";
+    waBtn2.onclick=function(){openWA(d,"rattrapage")};
+    btnRow.appendChild(reactBtn);btnRow.appendChild(waBtn2);card.appendChild(btnRow);
+    root.appendChild(card);
+  });
+  return root;
 }
 
-// ── Réglages Modal (consignes + signature) ───────────────────────────────────
-function openConsignes(){
-  var bg=el("div",{class:"modal-bg"});
-  var mod=el("div",{class:"modal",style:"max-width:480px"});
-  var hdr=el("div",{style:"display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"});
-  hdr.appendChild(el("div",{style:"font-size:17px;font-weight:800;color:#F1F5F9"},"⚙ Réglages"));
-  var cx=el("button",{style:"background:none;border:none;color:#94A3B8;font-size:20px;cursor:pointer"},"✕");
-  cx.onclick=function(){document.body.removeChild(bg)};
-  hdr.appendChild(cx);mod.appendChild(hdr);
+// ── Paramètres ────────────────────────────────────────────────────────────────
+function renderSettings(){
+  var root=el("div");
+  root.appendChild(el("div",{style:"font-size:22px;font-weight:900;color:#F1F5F9;margin-bottom:20px"},"⚙️ Paramètres"));
 
-  // Signature
-  mod.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Ma signature"));
-  var sigInfo=el("div",{style:"font-size:12px;color:#475569;margin-bottom:8px"});
-  sigInfo.textContent="Ajoutée automatiquement à la fin de chaque message WA et email";
-  mod.appendChild(sigInfo);
-  var sigTA=el("textarea",{rows:"3",placeholder:"Ex: Julien Martin - Agent immobilier\n06 12 34 56 78\njulien@agence.fr"});
-  sigTA.value=loadSignature();
-  sigTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:16px";
-  mod.appendChild(sigTA);
-
-  // Séparateur
-  mod.appendChild(el("div",{style:"border-top:1px solid #2A2F42;margin-bottom:16px"}));
-
-  // Consignes
-  mod.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Consignes permanentes"));
-  var consInfo=el("div",{style:"font-size:12px;color:#475569;margin-bottom:8px"});
-  consInfo.textContent="Intégrées à chaque message généré. Ex: Mentionne ta dispo le weekend. Reste concis.";
-  mod.appendChild(consInfo);
-  var consTA=el("textarea",{rows:"4",placeholder:"Tes consignes permanentes…"});
-  consTA.value=loadConsignes();
-  consTA.style.cssText="width:100%;padding:10px 12px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:13px;resize:vertical;box-sizing:border-box;margin-bottom:14px";
-  mod.appendChild(consTA);
-
-  var row=el("div",{style:"display:flex;gap:10px"});
-  var clearBtn=el("button",{class:"btn btn-ghost btn-full"});clearBtn.textContent="🗑 Tout effacer";
-  clearBtn.onclick=function(){sigTA.value="";consTA.value="";saveSignature("");saveConsignes("");clearBtn.textContent="✓ Effacé"};
-  var saveBtn=el("button",{class:"btn btn-success btn-full"});saveBtn.textContent="✓ Sauvegarder";
-  saveBtn.onclick=function(){
-    saveSignature(sigTA.value.trim());
-    saveConsignes(consTA.value.trim());
-    saveBtn.textContent="✓ Sauvegardé !";
-    setTimeout(function(){document.body.removeChild(bg)},800);
+  // Gmail Script
+  var gmailCard=el("div",{class:"card",style:"margin-bottom:12px"});
+  gmailCard.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Connexion Gmail"));
+  gmailCard.appendChild(el("div",{class:"info-box",style:"margin-bottom:12px"},"Entre l'URL de ton Google Apps Script pour récupérer automatiquement les emails de leadsefco@gmail.com"));
+  var gInp=el("input",{type:"text",placeholder:"https://script.google.com/macros/s/..."});
+  gInp.value=state.gmailScript||"";
+  var gSave=el("button",{class:"btn btn-success btn-full",style:"margin-top:10px"});gSave.textContent="✓ Enregistrer l'URL";
+  gSave.onclick=function(){
+    var url=gInp.value.trim();
+    saveGmailScript(url);setState({gmailScript:url});
+    gSave.textContent="✓ Sauvegardé !";setTimeout(function(){gSave.textContent="✓ Enregistrer l'URL"},2000);
   };
-  row.appendChild(clearBtn);row.appendChild(saveBtn);mod.appendChild(row);
-  bg.appendChild(mod);document.body.appendChild(bg);
+  gmailCard.appendChild(gInp);gmailCard.appendChild(gSave);
+
+  // Guide Apps Script
+  var guide=el("div",{style:"margin-top:14px"});
+  var toggleGuide=el("button",{class:"btn btn-ghost btn-sm"});toggleGuide.textContent="📖 Guide de configuration";
+  var guideContent=el("div",{style:"display:none;margin-top:12px;font-size:13px;color:#94A3B8;line-height:1.7"});
+  guideContent.innerHTML="<strong style='color:#F1F5F9'>Étapes :</strong><br>1. Va sur <strong>script.google.com</strong> connecté avec leadsefco@gmail.com<br>2. Crée un nouveau projet<br>3. Colle le script fourni<br>4. Clique <strong>Déployer</strong> → <strong>Nouvelle version</strong><br>5. Copie l'URL générée et colle-la ici";
+  toggleGuide.onclick=function(){guideContent.style.display=guideContent.style.display==="none"?"block":"none"};
+  guide.appendChild(toggleGuide);guide.appendChild(guideContent);gmailCard.appendChild(guide);
+  root.appendChild(gmailCard);
+
+  // Modèles de messages
+  var tplCard=el("div",{class:"card",style:"margin-bottom:12px"});
+  tplCard.appendChild(el("div",{class:"label",style:"margin-bottom:12px"},"Modèles de messages"));
+  tplCard.appendChild(el("div",{style:"font-size:12px;color:#94A3B8;margin-bottom:14px"},"Variables disponibles : {prenom} {bien} {ville} {plateforme}"));
+
+  var tplKeys={
+    premier_contact:"1er contact",
+    relance_j1:"Relance J+1",
+    relance_j3:"Relance J+3",
+    relance_j7:"Relance J+7",
+    rattrapage:"Rattrapage (lead froid)",
+    visite:"Proposition de visite"
+  };
+
+  Object.keys(tplKeys).forEach(function(key){
+    var d=el("div",{style:"margin-bottom:16px"});
+    d.appendChild(el("div",{class:"label"},tplKeys[key]));
+    var ta=el("textarea",{rows:"4"});
+    ta.style.cssText="width:100%;padding:10px;background:#0F1117;border:1px solid #2A2F42;border-radius:8px;color:#F1F5F9;font-size:12px;resize:vertical;box-sizing:border-box;line-height:1.5";
+    ta.value=state.templates[key]||"";
+    ta.oninput=function(){
+      var newTpl=Object.assign({},state.templates);newTpl[key]=ta.value;
+      state.templates=newTpl;saveTemplates(newTpl);
+    };
+    d.appendChild(ta);tplCard.appendChild(d);
+  });
+
+  var resetBtn=el("button",{class:"btn btn-ghost btn-sm",style:"margin-top:4px"});resetBtn.textContent="↺ Réinitialiser les modèles";
+  resetBtn.onclick=function(){
+    if(confirm("Réinitialiser tous les modèles ?"))setState({templates:getDefaultTemplates()});
+  };
+  tplCard.appendChild(resetBtn);root.appendChild(tplCard);
+
+  // Clé API
+  var apiCard=el("div",{class:"card",style:"margin-bottom:12px"});
+  apiCard.appendChild(el("div",{class:"label",style:"margin-bottom:8px"},"Clé API Gemini"));
+  var apiInp=el("input",{type:"text",placeholder:"AIza..."});
+  apiInp.value=state.apiKey||"";
+  var apiSave=el("button",{class:"btn btn-success btn-full",style:"margin-top:10px"});apiSave.textContent="✓ Mettre à jour";
+  apiSave.onclick=function(){
+    var k=apiInp.value.trim();if(!k)return;
+    saveKey(k);setState({apiKey:k});
+    apiSave.textContent="✓ Sauvegardé !";setTimeout(function(){apiSave.textContent="✓ Mettre à jour"},2000);
+  };
+  apiCard.appendChild(apiInp);apiCard.appendChild(apiSave);root.appendChild(apiCard);
+
+  // Export / Reset
+  var dataCard=el("div",{class:"card"});
+  dataCard.appendChild(el("div",{class:"label",style:"margin-bottom:12px"},"Données"));
+  var expBtn=el("button",{class:"btn btn-outline btn-full",style:"margin-bottom:10px"});expBtn.textContent="↓ Exporter tous les leads (CSV)";
+  expBtn.onclick=function(){
+    var h=["ID","Date","Prénom","Nom","Téléphone","Email","Ville","Bien","Plateforme","Statut","Priorité","Score","Budget","Financement","Délai achat","Commentaire"];
+    var rows=state.leads.map(function(l){return[l.id,l.dateEntree,l.prenom,l.nom,l.telephone,l.email,l.ville,l.bien,l.plateforme,l.statut,l.priorite,calcScore(l),l.budget||"",l.financement||"",l.delai||"",l.commentaire].map(function(v){return'"'+(v||"").replace(/"/g,'""')+'"'}).join(",")});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob(["\uFEFF"+[h.join(",")].concat(rows).join("\n")],{type:"text/csv;charset=utf-8;"}));
+    a.download="leads_"+today()+".csv";a.click();
+  };
+  dataCard.appendChild(expBtn);root.appendChild(dataCard);
+
+  return root;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
+// ── Render principal ──────────────────────────────────────────────────────────
 function render(){
   var app=qs("#app");app.innerHTML="";
   if(!state.apiKey){app.appendChild(renderSetup());return}
@@ -940,33 +1275,35 @@ function render(){
   var header=el("div",{class:"header"});
   var logo=el("div");
   logo.appendChild(el("div",{style:"font-size:16px;font-weight:900;color:#F1F5F9;letter-spacing:-0.02em"},"Gestion Leads"));
-  logo.appendChild(el("div",{style:"font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.08em"},"V1 · Acheteurs"));
+  logo.appendChild(el("div",{style:"font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:0.08em"},"V2 · Acheteurs"));
   header.appendChild(logo);
   var hb=el("div",{style:"display:flex;gap:8px"});
-  var cb=el("button",{class:"btn btn-ghost btn-sm"});cb.textContent="↓ CSV";
-  cb.onclick=function(){
-    var h=["ID","Date","Prénom","Nom","Téléphone","Email","Ville","Bien","Plateforme","Statut","Priorité","Commentaire"];
-    var rows=state.leads.map(function(l){return[l.id,l.dateEntree,l.prenom,l.nom,l.telephone,l.email,l.ville,l.bien,l.plateforme,l.statut,l.priorite,l.commentaire].map(function(v){return'"'+(v||"").replace(/"/g,'""')+'"'}).join(",")});
-    var a=document.createElement("a");
-    a.href=URL.createObjectURL(new Blob(["\uFEFF"+[h.join(",")].concat(rows).join("\n")],{type:"text/csv;charset=utf-8;"}));
-    a.download="leads_"+today()+".csv";a.click();
-  };
-  var kb=el("button",{class:"btn btn-ghost btn-sm"});kb.textContent="🔑";
-  kb.onclick=function(){if(confirm("Changer la clé API Groq ?")){localStorage.removeItem("gl_key");setState({apiKey:""})}};
-  var setBtn=el("button",{class:"btn btn-ghost btn-sm"});setBtn.textContent="⚙";setBtn.onclick=function(){openConsignes()};hb.appendChild(cb);hb.appendChild(setBtn);hb.appendChild(kb);header.appendChild(hb);app.appendChild(header);
+  var setBtn=el("button",{class:"btn btn-ghost btn-sm"});setBtn.textContent="⚙️";
+  setBtn.onclick=function(){setState({view:"settings"})};
+  hb.appendChild(setBtn);header.appendChild(hb);app.appendChild(header);
 
   var content=el("div",{class:"content"});
   var lead=state.leads.find(function(l){return l.id===state.selectedId});
   if(state.view==="fiche"&&lead)content.appendChild(renderFiche(lead));
   else if(state.view==="nouveau")content.appendChild(renderNouveau());
   else if(state.view==="liste")content.appendChild(renderListe());
-  else if(state.view==="dashboard")content.appendChild(renderDashboard());
+  else if(state.view==="pipeline")content.appendChild(renderPipeline());
+      else if(state.view==="dashboard")content.appendChild(renderDashboard());
+  else if(state.view==="dormants")content.appendChild(renderDormants());
+  else if(state.view==="settings")content.appendChild(renderSettings());
   else content.appendChild(renderRelances());
   app.appendChild(content);
 
+  // Nav — 5 onglets
   var relBadge=state.leads.reduce(function(a,l){return a+(l.relances||[]).filter(function(r){return!r.done&&(isToday(r.date)||isPast(r.date))}).length},0);
   var nav=el("div",{class:"nav"});
-  [{id:"relances",label:"Relances",icon:"⚡",badge:relBadge,bc:"#F59E0B"},{id:"liste",label:"Leads",icon:"☰",badge:state.leads.length,bc:"#3B82F6"},{id:"nouveau",label:"Nouveau",icon:"+",accent:true},{id:"dashboard",label:"Stats",icon:"📊"}].forEach(function(n){
+  [
+    {id:"relances",label:"Relances",icon:"⚡",badge:relBadge,bc:"#F59E0B"},
+    {id:"liste",label:"Leads",icon:"☰",badge:state.leads.length,bc:"#3B82F6"},
+    {id:"nouveau",label:"Nouveau",icon:"+",accent:true},
+    {id:"pipeline",label:"Pipeline",icon:"▦"},{id:"dashboard",label:"Stats",icon:"📊"},
+    {id:"settings",label:"Config",icon:"⚙️"}
+  ].forEach(function(n){
     var btn=el("div",{class:"nav-btn"+(n.accent?" accent":state.view===n.id?" active":"")});
     var iw=el("div",{class:"nav-icon"});iw.appendChild(document.createTextNode(n.icon));
     if(n.badge>0){var b=el("span",{class:"badge",style:"background:"+(n.bc||"#3B82F6")});b.textContent=n.badge+"";iw.appendChild(b)}
@@ -976,8 +1313,27 @@ function render(){
   app.appendChild(nav);
 }
 
+// ── Init ──────────────────────────────────────────────────────────────────────
 render();
 if(state.apiKey)fireNotif();
+// Vérification Gmail auto au démarrage
+if(state.apiKey&&state.gmailScript){
+  setTimeout(function(){
+    fetchGmailLeads(state.gmailScript,function(err,emails){
+      if(!err&&emails.length){
+        processGmailEmails(emails,function(created,dupes){
+          if(created>0){
+            saveLeads(state.leads);
+            if("Notification"in window&&Notification.permission==="granted"){
+              new Notification("Gestion Leads — "+created+" nouveau"+(created>1?"x":"")+" lead"+(created>1?"s":""),{body:"Récupéré depuis leadsefco@gmail.com",tag:"gl-gmail"});
+            }
+            render();
+          }
+        });
+      }
+    });
+  },2000);
+}
 </script>
 </body>
 </html>
