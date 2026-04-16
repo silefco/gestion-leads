@@ -240,7 +240,7 @@ function fireNotif(){
 }
 
 // ── Gemini ────────────────────────────────────────────────────────────────────
-var GURL=function(k){return"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+k};
+var GURL=function(k){return"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key="+k};
 function gText(txt,key,cb){
   fetch(GURL(key),{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({contents:[{parts:[{text:txt}]}],generationConfig:{temperature:0.7,maxOutputTokens:500}})
@@ -392,9 +392,65 @@ function renderNouveau(){
       aBtn.style.display="flex";
     };ie.src=url;
   };
+  // Bouton coller depuis presse-papiers
+  var pasteBtn=el("button",{class:"btn btn-ghost btn-full",style:"margin-bottom:8px"});
+  pasteBtn.textContent="📋 Coller une image (Ctrl+V)";
+  pasteBtn.onclick=function(){
+    navigator.clipboard.read().then(function(items){
+      for(var i=0;i<items.length;i++){
+        var item=items[i];
+        var imgType=item.types.find(function(t){return t.startsWith("image/")});
+        if(imgType){
+          item.getType(imgType).then(function(blob){
+            var file=new File([blob],"pasted.jpg",{type:blob.type});
+            var ie=new Image(),url=URL.createObjectURL(file);
+            ie.onload=function(){
+              var MAX=1400,w=ie.width,h=ie.height;
+              if(w>MAX||h>MAX){var r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}
+              var cv=document.createElement("canvas");cv.width=w;cv.height=h;
+              cv.getContext("2d").drawImage(ie,0,0,w,h);
+              imgData=cv.toDataURL("image/jpeg",0.85);
+              imgPrev.src=imgData;imgPrev.style.display="block";
+              hint.style.display="none";chgHint.style.display="block";
+              uz.className="upload-zone has-img";URL.revokeObjectURL(url);
+              aBtn.style.display="flex";pasteBtn.style.display="none";
+            };ie.src=url;
+          });
+          return;
+        }
+      }
+      alert("Aucune image trouvée dans le presse-papiers");
+    }).catch(function(){
+      alert("Autorise l'accès au presse-papiers dans ton navigateur");
+    });
+  };
+
+  // Écoute aussi le Ctrl+V global sur la page
+  document.addEventListener("paste",function(e){
+    var items=e.clipboardData&&e.clipboardData.items;
+    if(!items)return;
+    for(var i=0;i<items.length;i++){
+      if(items[i].type.indexOf("image")>=0){
+        var file=items[i].getAsFile();
+        var ie=new Image(),url=URL.createObjectURL(file);
+        ie.onload=function(){
+          var MAX=1400,w=ie.width,h=ie.height;
+          if(w>MAX||h>MAX){var r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}
+          var cv=document.createElement("canvas");cv.width=w;cv.height=h;
+          cv.getContext("2d").drawImage(ie,0,0,w,h);
+          imgData=cv.toDataURL("image/jpeg",0.85);
+          imgPrev.src=imgData;imgPrev.style.display="block";
+          hint.style.display="none";chgHint.style.display="block";
+          uz.className="upload-zone has-img";URL.revokeObjectURL(url);
+          aBtn.style.display="flex";pasteBtn.style.display="none";
+        };ie.src=url;
+      }
+    }
+  });
+
   var aBtn=el("button",{class:"btn btn-primary btn-full",style:"margin-bottom:8px;display:none"});aBtn.textContent="🔍 Analyser l'image";
   var progPhoto=el("div",{class:"progress",style:"display:none"},[el("div",{class:"progress-bar"})]);
-  photoZone.appendChild(aBtn);photoZone.appendChild(progPhoto);
+  photoZone.appendChild(pasteBtn);photoZone.appendChild(aBtn);photoZone.appendChild(progPhoto);
 
   // ── Zone Email texte ──
   var emailZone=el("div",{style:"display:none"});
