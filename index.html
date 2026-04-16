@@ -179,7 +179,7 @@ function calcScore(lead){
   if(lead.ville)score++;
   if(lead.bien)score++;
   // Bonus plateforme qualitative
-  if(["SeLoger","PAP","Bien'ici"].includes(lead.plateforme))score=Math.min(5,score+0.5);
+  if(["SeLoger","PAP","Bien'ici"].indexOf(lead.plateforme)>=0)score=Math.min(5,score+0.5);
   // Malus ancienneté
   var age=daysAgo(lead.dateEntree);
   if(age>7)score=Math.max(1,score-1);
@@ -265,7 +265,7 @@ function gVision(b64,mime,key,cb){
 // ── Gmail via Apps Script ─────────────────────────────────────────────────────
 function fetchGmailLeads(scriptUrl,cb){
   var lastDate=getLastEmailDate();
-  var url=scriptUrl+(scriptUrl.includes("?")?"&":"?")+"after="+(lastDate||"");
+  var url=scriptUrl+(scriptUrl.indexOf("?")>=0?"&":"?")+"after="+(lastDate||"");
   fetch(url).then(function(r){return r.json()}).then(function(data){
     cb(null,data.emails||[]);
   }).catch(function(e){cb(e.message,[])});
@@ -644,7 +644,7 @@ function openWA(lead,relanceKey){
     sendBtn.onclick=function(){
       var mailto="mailto:"+(lead.email||"")+"?subject="+encodeURIComponent(subInp.value)+"&body="+encodeURIComponent(ta.value);
       window.open(mailto);
-      var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email ouvert dans Mail"}])})});
+      var upd=state.leads.map(function(l){if(l.id!==lead.id)return l;return Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email ouvert dans Mail"}])})});
       setState({leads:upd});
     };
     mailZone.appendChild(sendBtn);
@@ -1314,8 +1314,8 @@ function render(){
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-render();
-if(state.apiKey)fireNotif();
+try{render();}catch(e){document.getElementById("app").innerHTML="<div style='color:#EF4444;padding:20px;font-family:sans-serif'>Erreur : "+e.message+"</div>";console.error(e);}
+if(state.apiKey)try{fireNotif();}catch(e){}
 // Vérification Gmail auto au démarrage
 if(state.apiKey&&state.gmailScript){
   setTimeout(function(){
