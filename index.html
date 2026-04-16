@@ -644,7 +644,7 @@ function openWA(lead,relanceKey){
     sendBtn.onclick=function(){
       var mailto="mailto:"+(lead.email||"")+"?subject="+encodeURIComponent(subInp.value)+"&body="+encodeURIComponent(ta.value);
       window.open(mailto);
-      var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email ouvert dans Mail"}]))})});
+      var upd=state.leads.map(function(l){return l.id!==lead.id?l:Object.assign({},l,{historique:(l.historique||[]).concat([{date:new Date().toISOString(),action:"Email ouvert dans Mail"}])})});
       setState({leads:upd});
     };
     mailZone.appendChild(sendBtn);
