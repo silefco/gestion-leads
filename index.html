@@ -240,7 +240,7 @@ function fireNotif(){
 }
 
 // ── Gemini ────────────────────────────────────────────────────────────────────
-var GURL=function(k){return"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key="+k};
+var GURL=function(k){return"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+k};
 function gText(txt,key,cb){
   fetch(GURL(key),{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({contents:[{parts:[{text:txt}]}],generationConfig:{temperature:0.7,maxOutputTokens:500}})
